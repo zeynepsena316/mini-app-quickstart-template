@@ -38,6 +38,7 @@ const sourceCodePro = Source_Code_Pro({
 const pacifico = Pacifico({
   variable: "--font-pacifico",
   subsets: ["latin"],
+  weight: "400",
 });
 
 export default function RootLayout({

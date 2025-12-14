@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import styles from "./page.module.css";
 import { useRouter } from "next/navigation";
 
+import BearButton from "./components/BearButton";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -39,6 +41,15 @@ export default function LoginPage() {
       setLoading(false);
     }
   }
+
+  const emotions = [
+    { key: "sad", label: "Üzgün", img: "/bears/sad.svg" },
+    { key: "happy", label: "Mutlu", img: "/bears/happy.svg" },
+    { key: "scared", label: "Korkmuş", img: "/bears/scared.svg" },
+    { key: "sleepy", label: "Uykulu", img: "/bears/sleepy.svg" },
+    { key: "love", label: "Aşık", img: "/bears/love.svg" },
+    { key: "fire", label: "Ateş", img: "/bears/fire.svg" },
+  ];
 
   return (
     <main className={styles.container}>
@@ -83,7 +94,6 @@ export default function LoginPage() {
             type="button"
             className={styles.guestButton}
             onClick={() => {
-              // Allow users to continue without creating an account
               try {
                 localStorage.setItem("guest", "1");
               } catch (e) {
@@ -96,7 +106,19 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Registration link removed as requested */}
+        <div className={styles.emotionSection}>
+          <h3 className={styles.emotionTitle}>Duygular (Butonlara tıklayın)</h3>
+          <div className={styles.emotionGrid}>
+            {emotions.map((em) => (
+              <BearButton
+                key={em.key}
+                label={em.label}
+                imgSrc={em.img}
+                onClick={() => router.push(`/login/${em.key}`)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   );
