@@ -146,3 +146,11 @@ For detailed docs, visit [docs.base.org](https://docs.base.org/docs/mini-apps/qu
 ## Disclaimer
 
 This project is a **demo application** for educational purposes only.
+
+## Anxiety Game Prototype
+
+Try the small anxiety-themed prototype by running the app locally and visiting `/game` or clicking **Play Demo** on the homepage. It's a minimal playable demo implementing the mechanics you described (anxiety meter, ghosts, power-ups and the "Stop & Breathe" mechanic).
+
+Update (Dec 2025): The prototype now uses a small Pac‑Man‑style maze, arrow-key controls, and three ghosts. You have 3 lives; ghosts now roam the maze passively (they don't aggressively chase you). The player can use Shift to dash away. Your anxiety meter rises as ghosts get closer — avoid them and collect pellets to calm down. Restart the demo to play again.
+
+Feedback welcome — tell me which mechanics you'd like me to tune next (difficulty, visuals, level progression, etc.).

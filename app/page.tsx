@@ -57,6 +57,9 @@ export default function Home() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="flex flex-col items-center gap-4">
         <div className="text-center text-2xl font-extrabold text-gray-900">BRAVER BEAVER APP</div>
+        <div className="mt-2">
+          <a href="/game" className="inline-block px-4 py-2 bg-cyan-600 text-white rounded-md shadow">Play Demo</a>
+        </div>
 
         <div className="relative w-[360px] sm:w-[420px] bg-black rounded-3xl shadow-2xl overflow-hidden">
           <div className="absolute inset-0 bg-black/40 z-0" />

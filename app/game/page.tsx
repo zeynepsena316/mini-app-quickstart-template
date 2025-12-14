@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
@@ -177,8 +178,14 @@ export default function GamePage() {
   function stopGame() {
     setPlaying(false)
   }
+=======
+import React from "react";
+import Game from "./Game";
+>>>>>>> dd1b812d9f8ce55dadfb96720d26786a815eb779
 
+export default function Page() {
   return (
+<<<<<<< HEAD
     <div style={{ padding: 20 }}>
       <h1 style={{ marginBottom: 8 }}>Küçük Kunduz ve Gözyaşı Oyunu</h1>
       <p style={{ marginTop: 0 }}>Kunduz ağlıyor — kovayla gözyaşlarını topla!</p>
@@ -329,16 +336,12 @@ export default function GamePage() {
             </div>
           </div>
         </div>
+=======
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl">
+        <Game />
+>>>>>>> dd1b812d9f8ce55dadfb96720d26786a815eb779
       </div>
-
-      <div style={{ maxWidth: 1000, margin: "10px auto", color: "#444" }}>
-        <h3>Nasıl oynanır</h3>
-        <ul>
-          <li>Kunduz ağlarken gözyaşları rastgele yerlere doğru akıyor.</li>
-          <li>Kovayı hareket ettirerek gözyaşlarını yakala.</li>
-          <li>Her yakalanan gözyaşı +1 skor getirir. Aşağı düşenler "kaçırılan" sayısını artırır.</li>
-        </ul>
-      </div>
-    </div>
-  )
+    </main>
+  );
 }
