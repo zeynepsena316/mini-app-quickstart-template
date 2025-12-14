@@ -153,4 +153,6 @@ Try the small anxiety-themed prototype by running the app locally and visiting `
 
 Update (Dec 2025): The prototype now uses a small Pac‑Man‑style maze, arrow-key controls, and three ghosts. You have 3 lives; ghosts now roam the maze passively (they don't aggressively chase you). The player can use Shift to dash away. Your anxiety meter rises as ghosts get closer — avoid them and collect pellets to calm down. Restart the demo to play again.
 
+Visuals: The game now uses simple SVG sprites located in `public/sprites/` for the beaver (player) and ghosts, and the maze walls are drawn with blue outlines to resemble classic arcade styling. Power pellets appear in the four corners. If you'd like, I can replace the SVGs with your exact artwork files (PNG/SVG) — just upload them and I'll swap them in.
+
 Feedback welcome — tell me which mechanics you'd like me to tune next (difficulty, visuals, level progression, etc.).

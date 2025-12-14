@@ -47,13 +47,26 @@ function idx(x: number, y: number) {
 export default function Game() {
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const [running, setRunning] = React.useState(true);
+  const runningRef = React.useRef(running);
   const [anxiety, setAnxiety] = React.useState(0); // 0 - 100
+  const [breathing, setBreathing] = React.useState(false);
+  const [gameOver, setGameOver] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
   const [lives, setLives] = React.useState(3);
   const [score, setScore] = React.useState(0);
   const [runKey, setRunKey] = React.useState(0);
   const anxietyRef = React.useRef(anxiety);
   React.useEffect(() => { anxietyRef.current = anxiety; }, [anxiety]);
+  React.useEffect(() => { runningRef.current = running; }, [running]);
+  React.useEffect(() => { if (!running) { /* keep gameOver true if running was stopped due to game over */ } }, [running]);
+  // ensure that when lives hit zero we set the game over state reliably
+  React.useEffect(() => {
+    if (lives <= 0) {
+      setGameOver(true);
+      setMessage("Game Over");
+      setRunning(false);
+    }
+  }, [lives]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current!;
@@ -61,11 +74,31 @@ export default function Game() {
     canvas.width = MAP_W * TILE;
     canvas.height = MAP_H * TILE;
 
-    // preload images
+    // preload images (use SVG sprites we added)
     const playerImg = new Image();
-    playerImg.src = "/bears/sad.png";
+    playerImg.src = "/sprites/beaver.svg";
     const ghostImg = new Image();
-    ghostImg.src = "/bears/scared.png";
+    ghostImg.src = "/sprites/ghost.svg";
+
+    // simple catch sound via Web Audio API
+    const audioCtx = typeof window !== 'undefined' && (new (window.AudioContext || (window as any).webkitAudioContext)());
+    function playCatchSound() {
+      if (!audioCtx) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'square';
+      o.frequency.value = 420; // start freq
+      g.gain.value = 0.08; // low volume
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start();
+      // quick down-chirp
+      const nowA = audioCtx.currentTime;
+      o.frequency.setValueAtTime(420, nowA);
+      o.frequency.exponentialRampToValueAtTime(180, nowA + 0.18);
+      g.gain.exponentialRampToValueAtTime(0.0001, nowA + 0.2);
+      o.stop(nowA + 0.22);
+    }
 
     let req = 0;
     const startPos = { x: 2 * TILE + TILE / 2, y: 2 * TILE + TILE / 2 };
@@ -80,8 +113,11 @@ export default function Game() {
     let last = performance.now();
     let keys: Record<string, boolean> = {};
     let pausedUntil = 0; // breathe pause
+    const particles: Array<{ x:number; y:number; vx:number; vy:number; life:number; color:string; size:number }> = [];
 
     function handleKey(e: KeyboardEvent) {
+      // ignore controls when the game is over
+      if (gameOver) return;
       if (e.type === "keydown") keys[e.key] = true;
       else keys[e.key] = false;
       // Space = stop & breathe mechanic
@@ -91,6 +127,8 @@ export default function Game() {
         // attempt a timed breath: reduces anxiety if not too close to a ghost
         const now = performance.now();
         pausedUntil = now + 3000; // 3s pause
+        setBreathing(true);
+        setTimeout(() => setBreathing(false), 3000);
         // check distances
         const close = ghosts.some((g) => distance(g, player) < 80 && (!g.disabledUntil || g.disabledUntil < now));
         if (!close) {
@@ -112,6 +150,25 @@ export default function Game() {
       const dx = a.x - b.x;
       const dy = a.y - b.y;
       return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+      ctx.save();
+      ctx.translate(x, y - size * 0.1);
+      ctx.beginPath();
+      // two top circles
+      ctx.arc(-size * 0.25, -size * 0.05, size * 0.25, 0, Math.PI * 2);
+      ctx.arc(size * 0.25, -size * 0.05, size * 0.25, 0, Math.PI * 2);
+      // bottom triangle-ish curve
+      ctx.moveTo(-size * 0.5, 0);
+      ctx.quadraticCurveTo(0, size * 0.8, size * 0.5, 0);
+      ctx.closePath();
+      ctx.fillStyle = "#ef4444";
+      ctx.fill();
+      ctx.strokeStyle = "#7f1d1d";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
     }
 
     function tileAtXY(x: number, y: number) {
@@ -161,6 +218,8 @@ export default function Game() {
     }
 
     let lastPowerSpawn = 0;
+    let lastBoardSpawn = 0;
+    const boards: Array<{ x: number; y: number; taken?: boolean }> = [];
     const powerUps: Array<{ x: number; y: number; type: string; taken?: boolean }> = [];
     // pellets collectible like pac-man dots
     const pellets: Array<{ tx: number; ty: number; taken?: boolean }> = [];
@@ -187,11 +246,33 @@ export default function Game() {
       }
     }
 
+    function spawnBoard() {
+      for (let i = 0; i < 30; i++) {
+        const rx = 1 + Math.floor(Math.random() * (MAP_W - 2));
+        const ry = 1 + Math.floor(Math.random() * (MAP_H - 2));
+        if (MAP[idx(rx, ry)] === 0) {
+          // avoid start / ghost spawn tiles
+          if ((rx === 2 && ry === 2) || (rx === 11 && ry === 3) || (rx === 12 && ry === 16) || (rx ===7 && ry ===9)) continue;
+          boards.push({ x: rx * TILE + TILE / 2, y: ry * TILE + TILE / 2 });
+          break;
+        }
+      }
+    }
+
     let powerTimers: any = { coffee: 0, breath: 0, journalGhostDisabledUntil: 0 };
+    let flashUntil = 0;
+    let shakeUntil = 0;
 
     function step(now: number) {
       const dt = Math.min(40, now - last) / 16.67; // normalize to ~60fps
       last = now;
+
+      // if the game is not running (game over or paused) skip simulation updates
+      if (!runningRef.current) {
+        // still draw final overlay/frames but skip movement updates
+        req = requestAnimationFrame(step);
+        return;
+      }
 
       // controls lag when anxiety high (simulate small delay)
       const curAnx = anxietyRef.current;
@@ -285,18 +366,31 @@ export default function Game() {
       // anxiety changes based on proximity and collisions
       let a = 0;
       const nowTime = performance.now();
+      let caughtThisFrame = false;
       for (const g of ghosts) {
         if (g.disabledUntil && g.disabledUntil > nowTime) continue;
         const d = distance(g, player);
-        if (d < 12 && (!player.invulnerableUntil || player.invulnerableUntil < nowTime)) {
+        // increased collision radius and ensure only one life is lost per frame
+        if (d < 20 && (!player.invulnerableUntil || player.invulnerableUntil < nowTime) && !caughtThisFrame) {
+          flashUntil = nowTime + 300;
+          shakeUntil = nowTime + 300; // brief screen shake
+          playCatchSound();
+          // spawn capture particles (scorch burst)
+          for (let i = 0; i < 18; i++) {
+            const ang = (Math.PI * 2 * i) / 18 + Math.random() * 0.3;
+            const spd = 1.2 + Math.random() * 1.5;
+            particles.push({ x: player.x, y: player.y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, life: 400, color: "#ff7a00", size: 2 });
+          }
           // collision: lose life
           setLives((l) => {
             const nl = l - 1;
             setMessage("You were caught!");
             setTimeout(() => setMessage(null), 1200);
             if (nl <= 0) {
-              setAnxiety(100);
-              setRunning(false);
+                setAnxiety(100);
+                setRunning(false);
+                setGameOver(true);
+                setMessage("Game Over");
             } else {
               // reset positions and temporary invulnerability
               player.x = startPos.x; player.y = startPos.y;
@@ -307,6 +401,7 @@ export default function Game() {
             }
             return nl;
           });
+          caughtThisFrame = true;
         }
         if (d < 220) {
           a += Math.max(0, (220 - d) / 220) * 0.9; // accumulate per ghost (stronger anxiety since ghosts are passive)
@@ -339,6 +434,25 @@ export default function Game() {
         }
       }
 
+      // handle board pickups
+      for (const b of boards) {
+        if (b.taken) continue;
+        const d = distance(b as Vec, player);
+        if (d < 20) {
+          b.taken = true;
+          setScore((s) => s + 25);
+          setAnxiety((a) => Math.max(0, a - 10));
+          setMessage("Tahta toplandı!");
+          setTimeout(() => setMessage(null), 1200);
+          // sparkle particles for pickup feedback
+          for (let i = 0; i < 10; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 0.8 + Math.random();
+            particles.push({ x: b.x, y: b.y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, life: 350, color: "#ffd166", size: 1.5 });
+          }
+        }
+      }
+
       // pellet pickups
       const ptx = Math.floor(player.x / TILE);
       const pty = Math.floor(player.y / TILE);
@@ -354,14 +468,46 @@ export default function Game() {
       // spawn powers occasionally
       if (now - lastPowerSpawn > 4000 && powerUps.filter(p => !p.taken).length < 3) { spawnPower(); lastPowerSpawn = now; }
 
+      // spawn boards occasionally (rare collectible that reduces anxiety)
+      if (now - lastBoardSpawn > 7000 && boards.filter(b => !b.taken).length < 2) { spawnBoard(); lastBoardSpawn = now; }
+
       // draw
+      // compute brief screen shake offset
+      let shakeX = 0, shakeY = 0;
+      if (shakeUntil > now) {
+        const intensity = 3; // pixels
+        shakeX = (Math.random() - 0.5) * 2 * intensity;
+        shakeY = (Math.random() - 0.5) * 2 * intensity;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // map
+            // update & draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+              const prt = particles[i];
+              prt.life -= dt * 16.67;
+              prt.x += prt.vx * dt * 6;
+              prt.y += prt.vy * dt * 6;
+              if (prt.life <= 0) { particles.splice(i, 1); continue; }
+              const alpha = Math.max(0, Math.min(1, prt.life / 400));
+              ctx.fillStyle = `rgba(${prt.color === "#ff7a00" ? "255,122,0" : "255,209,102"},${alpha})`;
+              ctx.beginPath(); ctx.arc(prt.x, prt.y, prt.size, 0, Math.PI * 2); ctx.fill();
+            }
+      // map - draw Pac-Man-like walls: blue outlines with inner dark fill
       for (let ry = 0; ry < MAP_H; ry++) {
         for (let rx = 0; rx < MAP_W; rx++) {
           const v = MAP[idx(rx, ry)];
-          if (v === 1) { ctx.fillStyle = "#0f172a"; ctx.fillRect(rx * TILE, ry * TILE, TILE, TILE); }
-          else if (v === 2) { ctx.fillStyle = "rgba(0,0,0,0.35)"; ctx.fillRect(rx * TILE, ry * TILE, TILE, TILE); }
+          if (v === 1) {
+            // wall tile: dark inner + blue border
+            ctx.fillStyle = "#040814";
+            ctx.fillRect(rx * TILE + shakeX, ry * TILE + shakeY, TILE, TILE);
+            ctx.strokeStyle = "#2b6cb0";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(rx * TILE + 1.5 + shakeX, ry * TILE + 1.5 + shakeY, TILE - 3, TILE - 3);
+          } else {
+            // floor is darker black so pellets show
+            ctx.fillStyle = "#000";
+            ctx.fillRect(rx * TILE + shakeX, ry * TILE + shakeY, TILE, TILE);
+          }
         }
       }
 
@@ -370,79 +516,87 @@ export default function Game() {
         if (p.taken) continue;
         ctx.beginPath();
         ctx.fillStyle = p.type === "coffee" ? "#f59e0b" : p.type === "breath" ? "#10b981" : p.type === "music" ? "#60a5fa" : "#a78bfa";
-        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.arc(p.x + shakeX, p.y + shakeY, 8, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // draw pellets (small dots)
-      for (const pel of pellets) {
-        if (pel.taken) continue;
-        const cx = pel.tx * TILE + TILE / 2;
-        const cy = pel.ty * TILE + TILE / 2;
-        ctx.fillStyle = "#fde68a";
-        ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+      // draw boards (wooden planks)
+      for (const b of boards) {
+        if (b.taken) continue;
+        ctx.save();
+        ctx.translate(b.x + shakeX, b.y + shakeY);
+        ctx.rotate((Math.PI / 180) * ((b.x + b.y) % 20 - 10));
+        ctx.fillStyle = "#a16207"; // wood
+        ctx.fillRect(-10, -5, 20, 10);
+        ctx.strokeStyle = "#7c2d12";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(-10, -5, 20, 10);
+        // nails
+        ctx.fillStyle = "#2b2b2b";
+        ctx.beginPath(); ctx.arc(-6, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(6, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
       }
 
-      // draw ghosts
+      // draw pellets: small white dots, big power pellets at four corners
+      for (const pel of pellets) {
+        if (pel.taken) continue;
+        const cx = pel.tx * TILE + TILE / 2 + shakeX;
+        const cy = pel.ty * TILE + TILE / 2 + shakeY;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      // big power pellets in corners
+      const corners = [ [1,1],[MAP_W-2,1],[1,MAP_H-2],[MAP_W-2,MAP_H-2] ];
+      for (const c of corners) {
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.arc(c[0]*TILE + TILE/2 + shakeX, c[1]*TILE + TILE/2 + shakeY, 6, 0, Math.PI*2); ctx.fill();
+      }
+
+      // visually highlight the ghost house in the maze center
+      ctx.strokeStyle = "#2b6cb0";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(7 * TILE + 2 + shakeX, 8 * TILE + 2 + shakeY, TILE * 1, TILE * 3);
+
+      // draw ghosts using sprite
       for (const g of ghosts) {
         const nowTime = performance.now();
         ctx.save();
         if (g.disabledUntil && g.disabledUntil > nowTime) {
           ctx.globalAlpha = 0.25;
         }
-        // ghost sprite fallback (if image loaded draw it)
+        const s = 44;
         if (ghostImg.complete && ghostImg.naturalWidth) {
-          const s = 36;
-          ctx.drawImage(ghostImg, g.x - s / 2, g.y - s / 2 - 6, s, s);
+          ctx.drawImage(ghostImg, g.x - s / 2 + shakeX, g.y - s / 2 - 6 + shakeY, s, s);
         } else {
-          ctx.beginPath();
-          ctx.fillStyle = "rgba(180,200,255,0.95)";
-          ctx.arc(g.x, g.y - 4, 14, Math.PI, 0);
-          ctx.fill();
-          ctx.fillRect(g.x - 14, g.y - 4, 28, 18);
-          // eyes
-          ctx.fillStyle = "#06202a";
-          ctx.beginPath(); ctx.ellipse(g.x - 6, g.y - 6, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(g.x + 6, g.y - 6, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#cceeff";
+          ctx.beginPath(); ctx.arc(g.x + shakeX, g.y - 4 + shakeY, 14, Math.PI, 0); ctx.fill();
         }
         ctx.restore();
       }
 
       // draw player (kunduz) - prefer sprite
       if (playerImg.complete && playerImg.naturalWidth) {
-        const s = 36;
-        ctx.drawImage(playerImg, player.x - s / 2, player.y - s / 2 - 2, s, s);
+        const s = 42;
+        ctx.drawImage(playerImg, player.x - s / 2 + shakeX, player.y - s / 2 - 2 + shakeY, s, s);
       } else {
         ctx.save();
         const nowTimeForDraw = performance.now();
         if (player.invulnerableUntil && player.invulnerableUntil > nowTimeForDraw) ctx.globalAlpha = 0.5;
-        ctx.beginPath(); ctx.fillStyle = "#b5651d"; ctx.arc(player.x, player.y, 14, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.fillStyle = "#b5651d"; ctx.arc(player.x + shakeX, player.y + shakeY, 14, 0, Math.PI * 2); ctx.fill();
         // eyes & sweat when anxious
-        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(player.x - 5, player.y - 4, 3, 4, 0, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(player.x + 5, player.y - 4, 3, 4, 0, 0, Math.PI*2); ctx.fill();
-        if (anxiety > 50) { ctx.fillStyle = "#7dd3fc"; ctx.beginPath(); ctx.ellipse(player.x + 10, player.y - 10, 3, 6, 0, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.ellipse(player.x - 5 + shakeX, player.y - 4 + shakeY, 3, 4, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(player.x + 5 + shakeX, player.y - 4 + shakeY, 3, 4, 0, 0, Math.PI*2); ctx.fill();
         ctx.restore();
       }
 
-      // HUD
-      // anxiety bar
-      ctx.fillStyle = "#e2e8f0";
-      ctx.fillRect(8, 8, canvas.width - 16, 12);
-      ctx.fillStyle = "#ef4444";
-      ctx.fillRect(8, 8, ((canvas.width - 16) * anxiety) / 100, 12);
-      ctx.strokeStyle = "#0f172a";
-      ctx.strokeRect(8, 8, canvas.width - 16, 12);
-      ctx.fillStyle = "#0f172a";
-      ctx.fillText(`${Math.round(anxiety)}%`, canvas.width - 44, 18);
+      // HUD (anxiety UI removed per request)
 
-      // lives (hearts)
+      // lives (hearts) - draw nicer heart shapes
       for (let i = 0; i < lives; i++) {
-        const hx = 12 + i * 18;
+        const hx = 14 + i * 22;
         const hy = 28;
-        ctx.fillStyle = "#ef4444";
-        ctx.beginPath(); ctx.arc(hx, hy, 5, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(hx+8, hy, 5, 0, Math.PI*2); ctx.fill();
-        ctx.fillRect(hx, hy, 12, 10);
+        drawHeart(ctx, hx, hy, 12);
       }
       // score
       ctx.fillStyle = "#94a3b8";
@@ -460,9 +614,17 @@ export default function Game() {
       if (anxiety >= 100) {
         // game over
         setRunning(false);
-        setMessage("Overwhelmed — game over");
-        // show a short reflective line
+        setGameOver(true);
+        setMessage("Game Over");
+        // show a short reflective line after a moment
         setTimeout(() => setMessage("Kaçmak bazen iyidir, ama yüzleşmek kazandırır."), 1600);
+      }
+
+      // draw brief capture flash if player was caught
+      if (flashUntil > now) {
+        const alpha = Math.max(0, Math.min(1, (flashUntil - now) / 300));
+        ctx.fillStyle = `rgba(255,120,0,${alpha})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
       }
 
       req = requestAnimationFrame(step);
@@ -477,22 +639,24 @@ export default function Game() {
     };
   }, [runKey]);
 
-  const vignette = anxiety > 70;
+  // Show vignette only during the Stop & Breathe pause
+  const vignette = breathing;
 
   return (
     <div className="p-4 flex flex-col items-center gap-4">
       <h2 className="text-xl font-bold">Mini Anxiety Game — Prototype</h2>
       <div className="relative bg-white/5 p-2 rounded shadow-inner">
-        <canvas ref={canvasRef} style={{ width: MAP_W * TILE, height: MAP_H * TILE, imageRendering: 'pixelated' }} />
-        {vignette && (
-          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', mixBlendMode: 'multiply' }}>
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%)' }} />
-            <div style={{ position: 'absolute', inset: 0, backdropFilter: 'blur(3px) brightness(0.8)' }} />
+        <canvas ref={canvasRef} style={{ width: MAP_W * TILE, height: MAP_H * TILE, imageRendering: 'pixelated', display: 'block', margin: '0 auto' }} />
+        {/* Vignette overlay removed with anxiety UI */}
+        {gameOver && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', background: 'rgba(0,0,0,0.6)' }}>
+            <div style={{ color: '#fff', fontSize: 28, fontWeight: 700, marginBottom: 12 }}>GAME OVER</div>
+            <button onClick={() => { setAnxiety(0); setMessage(null); setRunning(true); setLives(3); setScore(0); setRunKey(k => k + 1); setGameOver(false); }} className="px-4 py-2 bg-cyan-500 rounded text-white">Restart</button>
           </div>
         )}
       </div>
       <div className="flex gap-4">
-        <button onClick={() => { setAnxiety(0); setMessage(null); setRunning(true); setLives(3); setScore(0); setRunKey(k => k + 1); }} className="px-4 py-2 bg-cyan-500 rounded text-white">Restart</button>
+        <button onClick={() => { setAnxiety(0); setMessage(null); setRunning(true); setLives(3); setScore(0); setRunKey(k => k + 1); setGameOver(false); }} className="px-4 py-2 bg-cyan-500 rounded text-white">Restart</button>
         <div className="text-sm text-gray-300">Controls: Arrow keys / WASD — Shift: Dash — Space: Stop & Breathe</div>
       </div>
       <div className="text-sm text-gray-200 mt-1">Lives: <strong>{lives}</strong> — Score: <strong>{score}</strong></div>
