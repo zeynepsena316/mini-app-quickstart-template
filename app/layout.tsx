@@ -37,6 +37,7 @@ const sourceCodePro = Source_Code_Pro({
 
 const pacifico = Pacifico({
   variable: "--font-pacifico",
+  weight: "400",
   subsets: ["latin"],
   weight: "400",
 });
