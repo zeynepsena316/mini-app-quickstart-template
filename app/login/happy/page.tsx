@@ -1,16 +1,21 @@
 import Link from "next/link";
 import styles from "../page.module.css";
+import JumpGame from "../components/JumpGame";
 
 export default function HappyPage() {
   return (
     <main className={styles.container}>
       <div className={styles.card}>
-        <h2>Mutlu Ayı</h2>
-        <p>Bu sayfa "Mutlu" butonuna tıklandığında gösterilir.</p>
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <img src="/bears/happy.png" alt="happy" style={{ width: 160 }} />
+        <h2>Mutlu Oyunu</h2>
+        <p>Kunduzu zıplatıp yukarı çıkarmaya çalışın — ekrandaki çim blokları kullanın.</p>
+
+        {/* Game component: uses images from /public/games/ (place your images here)
+            Default placeholders: `/public/games/grass.svg` and `/public/games/beaver.svg` */}
+        <div style={{ marginTop: 12 }}>
+          <JumpGame grassSrc="/games/grass.png" beaverSrc="/games/beaver.png" />
         </div>
-        <div style={{ marginTop: 18, textAlign: "center" }}>
+
+        <div style={{ marginTop: 12, textAlign: "center" }}>
           <Link href="/login">
             <button className={styles.guestButton}>Geri dön</button>
           </Link>
