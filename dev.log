@@ -175,3 +175,237 @@ nohup: ignoring input
  GET /moods/fire.png 404 in 107ms (compile: 89ms, render: 18ms)
  ⨯ The requested resource isn't a valid image for /moods/fire.png received null
  HEAD / 200 in 104ms (compile: 86ms, render: 18ms)
+ ✓ Compiled in 31ms
+ GET / 200 in 428ms (compile: 205ms, render: 223ms)
+ GET / 200 in 148ms (compile: 124ms, render: 24ms)
+ GET /login/sad 200 in 2.1s (compile: 2.1s, render: 39ms)
+ GET /login/sad 200 in 144ms (compile: 117ms, render: 27ms)
+ GET /login/happy 200 in 2.1s (compile: 2.1s, render: 26ms)
+ GET /login/scared 200 in 1519ms (compile: 1491ms, render: 28ms)
+ GET /login/sleepy 200 in 1494ms (compile: 1470ms, render: 25ms)
+ GET /login/love 200 in 1514ms (compile: 1488ms, render: 27ms)
+ GET /login/fire 200 in 1660ms (compile: 1632ms, render: 28ms)
+ GET / 200 in 133ms (compile: 108ms, render: 25ms)
+ GET /intro-poster.jpg 404 in 149ms (compile: 126ms, render: 23ms)
+ HEAD / 200 in 110ms (compile: 91ms, render: 20ms)
+ GET /login/happy 200 in 124ms (compile: 113ms, render: 11ms)
+ GET /login 200 in 1285ms (compile: 1274ms, render: 10ms)
+ GET /login 200 in 131ms (compile: 105ms, render: 25ms)
+ HEAD /login 200 in 102ms (compile: 81ms, render: 21ms)
+ GET /login 200 in 121ms (compile: 97ms, render: 24ms)
+ HEAD /login 200 in 103ms (compile: 82ms, render: 21ms)
+ GET /login/happy 200 in 95ms (compile: 84ms, render: 11ms)
+ GET / 200 in 110ms (compile: 100ms, render: 10ms)
+ GET /intro-poster.jpg 404 in 112ms (compile: 84ms, render: 28ms)
+ GET /intro-poster.jpg 404 in 134ms (compile: 109ms, render: 25ms)
+ GET /login/scared 200 in 108ms (compile: 95ms, render: 13ms)
+ GET /login 200 in 111ms (compile: 101ms, render: 9ms)
+ GET /intro-poster.jpg 404 in 131ms (compile: 97ms, render: 35ms)
+ GET /intro-poster.jpg 404 in 128ms (compile: 105ms, render: 23ms)
+ ✓ Compiled in 46ms
+ ⨯ ./app/page.tsx:146:3
+Parsing ecmascript source code failed
+[0m [90m 144 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 145 |[39m     )[33m;[39m
+[31m[1m>[22m[39m[90m 146 |[39m   }
+ [90m     |[39m   [31m[1m^[22m[39m
+ [90m 147 |[39m[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 962ms (compile: 893ms, render: 69ms)
+ ✓ Compiled in 29ms
+ ⨯ ./app/page.tsx:142:15
+Parsing ecmascript source code failed
+[0m [90m 140 |[39m                   [33m>[39m
+ [90m 141 |[39m           [33m<[39m[33mdiv[39m className[33m=[39m[32m"absolute bottom-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/60 rounded-full"[39m [33m/[39m[33m>[39m
+[31m[1m>[22m[39m[90m 142 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m               [31m[1m^[22m[39m
+[31m[1m>[22m[39m[90m 143 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 144 |[39m     )[33m;[39m
+ [90m 145 |[39m   }
+ [90m 146 |[39m[0m
+
+Expected '</', got 'jsx text (
+      )'
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 31ms (compile: 14ms, render: 17ms)
+ ⨯ ./app/page.tsx:142:15
+Parsing ecmascript source code failed
+[0m [90m 140 |[39m                   [33m>[39m
+ [90m 141 |[39m           [33m<[39m[33mdiv[39m className[33m=[39m[32m"absolute bottom-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/60 rounded-full"[39m [33m/[39m[33m>[39m
+[31m[1m>[22m[39m[90m 142 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m               [31m[1m^[22m[39m
+[31m[1m>[22m[39m[90m 143 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 144 |[39m     )[33m;[39m
+ [90m 145 |[39m   }
+ [90m 146 |[39m[0m
+
+Expected '</', got 'jsx text (
+      )'
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 16ms (compile: 10ms, render: 6ms)
+ ✓ Compiled in 26ms
+ ⨯ ./app/page.tsx:142:17
+Parsing ecmascript source code failed
+[0m [90m 140 |[39m                   [33m>[39m
+ [90m 141 |[39m           [33m<[39m[33mdiv[39m className[33m=[39m[32m"absolute bottom-2 left-1/2 -translate-x-1/2 w-24 h-6 bg-black/60 rounded-full"[39m [33m/[39m[33m>[39m
+[31m[1m>[22m[39m[90m 142 |[39m           [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m                 [31m[1m^[22m[39m
+[31m[1m>[22m[39m[90m 143 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m     |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 144 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 145 |[39m       )[33m;[39m
+ [90m 146 |[39m   }[0m
+
+Expected '</', got 'jsx text (
+        )'
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 22ms (compile: 17ms, render: 5ms)
+ ✓ Compiled in 25ms
+ ⨯ ./app/page.tsx:145:3
+Parsing ecmascript source code failed
+[0m [90m 143 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 144 |[39m       )[33m;[39m
+[31m[1m>[22m[39m[90m 145 |[39m   }
+ [90m     |[39m   [31m[1m^[22m[39m
+ [90m 146 |[39m[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 16ms (compile: 10ms, render: 6ms)
+ ⨯ ./app/page.tsx:145:3
+Parsing ecmascript source code failed
+[0m [90m 143 |[39m       [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 144 |[39m       )[33m;[39m
+[31m[1m>[22m[39m[90m 145 |[39m   }
+ [90m     |[39m   [31m[1m^[22m[39m
+ [90m 146 |[39m[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 17ms (compile: 11ms, render: 6ms)
+ ⨯ ./app/page.tsx:146:3
+Parsing ecmascript source code failed
+[0m [90m 144 |[39m     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 145 |[39m   )[33m;[39m
+[31m[1m>[22m[39m[90m 146 |[39m   }
+ [90m     |[39m   [31m[1m^[22m[39m
+ [90m 147 |[39m[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 16ms (compile: 10ms, render: 6ms)
+ ⨯ ./app/page.tsx:146:3
+Parsing ecmascript source code failed
+[0m [90m 144 |[39m     [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 145 |[39m   )[33m;[39m
+[31m[1m>[22m[39m[90m 146 |[39m   }
+ [90m     |[39m   [31m[1m^[22m[39m
+ [90m 147 |[39m[0m
+
+Unexpected token. Did you mean `{'}'}` or `&rbrace;`?
+
+Import traces:
+  Client Component Browser:
+    ./app/page.tsx [Client Component Browser]
+    ./app/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./app/page.tsx [Client Component SSR]
+    ./app/page.tsx [Server Component]
+
+
+ GET / 500 in 16ms (compile: 9ms, render: 7ms)
+ ✓ Compiled in 36ms
+ GET / 200 in 252ms (compile: 208ms, render: 44ms)
+ GET /intro-poster.jpg 404 in 302ms (compile: 185ms, render: 117ms)
+ GET / 200 in 408ms (compile: 94ms, render: 314ms)
+ GET /intro-poster.jpg 404 in 106ms (compile: 86ms, render: 20ms)
+ GET / 200 in 201ms (compile: 81ms, render: 120ms)
+ GET /intro-poster.jpg 404 in 117ms (compile: 91ms, render: 26ms)
+ GET / 200 in 279ms (compile: 96ms, render: 183ms)
+ GET / 200 in 150ms (compile: 126ms, render: 25ms)
+ GET /intro-poster.jpg 404 in 127ms (compile: 100ms, render: 27ms)
+ HEAD / 200 in 108ms (compile: 88ms, render: 20ms)
+ ✓ Compiled in 41ms
+ ✓ Compiled in 1ms
+ GET / 200 in 453ms (compile: 223ms, render: 230ms)
+ GET / 200 in 143ms (compile: 116ms, render: 27ms)
+ GET /intro-poster.jpg 404 in 144ms (compile: 115ms, render: 30ms)
+ HEAD / 200 in 137ms (compile: 104ms, render: 33ms)
+ ✓ Compiled in 47ms
+ GET / 200 in 430ms (compile: 202ms, render: 228ms)
+ GET / 200 in 153ms (compile: 130ms, render: 22ms)
