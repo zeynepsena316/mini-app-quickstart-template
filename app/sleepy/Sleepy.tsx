@@ -11,6 +11,9 @@ export default function Sleepy() {
   const [showHomeModal, setShowHomeModal] = React.useState(false);
 
   React.useEffect(() => {
+      // Arka plan görseli
+      const bgImg = new Image();
+      bgImg.src = "/bears/night.jpg";
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
     // Sabit mobil boyut: 360x640 (9:16 aspect ratio)
@@ -24,14 +27,14 @@ export default function Sleepy() {
     const coffeeImg = new Image();
     coffeeImg.src = "/bears/coffee-emoji.svg"; // Çizilmiş kahve emojisi
     
-    const bedImg = new Image();
-    bedImg.src = "/bears/bed.svg"; // SVG kullan
+        const pillowImg = new Image();
+        pillowImg.src = "/bears/pillow.png";
 
     let player = { x: canvas.width / 2, y: canvas.height - 100, width: 60, height: 60, speed: 6 };
     let keys: Record<string, boolean> = {};
     
     // Düşen objeler
-    type FallingItem = { x: number; y: number; type: "coffee" | "bed"; speed: number; size: number };
+    type FallingItem = { x: number; y: number; type: "coffee" | "pillow"; speed: number; size: number };
     let items: FallingItem[] = [];
     let lastSpawn = 0;
     let gameSpeed = 1;
@@ -120,7 +123,7 @@ export default function Sleepy() {
       // Obje spawn (kahve ve yatak)
       if (now - lastSpawn > 800 / gameSpeed) {
         // Daha fazla yatak gelsin: kahve olma ihtimali %35'e düşürüldü
-        const type = Math.random() > 0.65 ? "coffee" : "bed";
+        const type = Math.random() > 0.65 ? "coffee" : "pillow";
         const x = Math.random() * (canvas.width - 60) + 30;
         const size = type === "coffee" ? 40 : 50;
         items.push({ x, y: -30, type, speed: 2.5 + gameSpeed * 0.5, size });
@@ -155,17 +158,27 @@ export default function Sleepy() {
 
       // Çizim
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Arka plan - gece gökyüzü
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "#0f172a");
-      gradient.addColorStop(1, "#1e293b");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Arka plan görseli (night.jpg)
+      if (bgImg.complete && bgImg.naturalWidth) {
+        // Alttan %15'lik kısmı kırp
+        const cropHeight = bgImg.naturalHeight * 0.85;
+        ctx.drawImage(
+          bgImg,
+          0, 0, bgImg.naturalWidth, cropHeight, // Kaynak (orijinal görseldeki dikdörtgen)
+          0, 0, canvas.width, canvas.height     // Canvas'a tam oturacak şekilde
+        );
+      } else {
+        // Yüklenmezse eski gradient yedek
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, "#0f172a");
+        gradient.addColorStop(1, "#1e293b");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
 
       // Düşen objeler (görseller)
       for (const item of items) {
-        const img = item.type === "coffee" ? coffeeImg : bedImg;
+        const img = item.type === "coffee" ? coffeeImg : pillowImg;
         if (img.complete && img.naturalWidth) {
           ctx.drawImage(img, item.x - item.size / 2, item.y - item.size / 2, item.size, item.size);
         } else {
@@ -228,7 +241,7 @@ export default function Sleepy() {
             <div className="text-6xl mb-4">☕</div>
             <h2 className="text-3xl text-white font-bold text-center">Coffee Run</h2>
             <p className="text-white text-center text-lg leading-relaxed">
-              Finals week! Collect coffee and don't fall asleep! Avoid the beds or you'll doze off!
+              Finals week! Collect coffee and don't fall asleep! Avoid the pillows or you'll doze off!
             </p>
             <div className="w-full flex flex-col gap-3">
               <button
@@ -296,7 +309,7 @@ export default function Sleepy() {
       )}
       <h1 className="text-3xl font-bold text-white mt-4">☕ Coffee Run ☕</h1>
       <p className="text-slate-300 text-center max-w-md px-4">
-        Finals week! Collect coffee and don't fall asleep! Avoid the beds or you'll doze off!
+        Finals week! Collect coffee and don't fall asleep! Avoid the pillows or you'll doze off!
       </p>
       <div className="relative bg-slate-800 rounded-3xl shadow-2xl overflow-hidden" style={{ width: '360px', height: '640px' }}>
         <canvas ref={canvasRef} className="block" />
