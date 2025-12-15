@@ -14,70 +14,24 @@ const MOODS = [
 
 export default function Home() {
 	const router = useRouter();
-	const videoRef = React.useRef<HTMLVideoElement | null>(null);
-	const [videoSrc, setVideoSrc] = React.useState<string>("/background.mp4");
-
-	React.useEffect(() => {
-		const v = videoRef.current;
-		if (!v) return;
-		function handleLoaded() {
-			if (!videoRef.current) return;
-			videoRef.current.currentTime = 1;
-			videoRef.current.muted = false;
-			videoRef.current.play().catch(() => {});
-		}
-		v.addEventListener("loadedmetadata", handleLoaded);
-		function onPause() {
-			const vv = videoRef.current;
-			if (!vv) return;
-			try { vv.play().catch(() => {}); } catch (_) {}
-		}
-		v.addEventListener("pause", onPause);
-		return () => {
-			v.removeEventListener("loadedmetadata", handleLoaded);
-			v.removeEventListener("pause", onPause);
-		};
-	}, []);
-
-	React.useEffect(() => {
-		let mounted = true;
-		async function findVideo() {
-			const candidates = [
-				"/background.mp4",
-				"/intro.mp4",
-			];
-			for (const c of candidates) {
-				try {
-					const res = await fetch(c, { method: "HEAD" });
-					if (res.ok && mounted) {
-						setVideoSrc(c);
-						return;
-					}
-				} catch (e) {
-					/* ignore */
-				}
-			}
-		}
-		findVideo();
-		return () => { mounted = false; };
-	}, []);
 
 	return (
 		<div className="min-h-screen flex items-center justify-center p-0 bg-black">
 			<div className="flex flex-col items-center gap-4 w-full max-w-[420px] mx-auto">
 				<div className="relative w-[360px] sm:w-[420px] bg-black rounded-3xl shadow-2xl overflow-hidden">
 					<div className="absolute inset-0 bg-black/40 z-0" />
-					<div className="relative aspect-[9/16] bg-black">
+					<div className="relative aspect-[9/16] bg-black overflow-hidden">
 						<video
-							ref={videoRef}
-							className="absolute inset-0 w-full h-[130%] object-cover pointer-events-none"
-							style={{ position: 'absolute', top: 'auto', bottom: 0, transform: 'translateY(14%)' }}
+							ref={React.useRef<HTMLVideoElement>(null)}
+							className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+							style={{ transform: 'scale(1.39)', transformOrigin: 'center center' }}
 							autoPlay
 							loop
+							muted
 							playsInline
-							poster="/intro-poster.jpg"
 						>
-							<source src={videoSrc} type="video/mp4" />
+							<source src="/background.mp4" type="video/mp4" />
+							<source src="/intro.mp4" type="video/mp4" />
 						</video>
 						<div className="absolute inset-x-0 top-8 z-10 flex flex-col items-center px-4">
 							<h1 className="text-4xl sm:text-5xl font-extrabold text-yellow-300 tracking-tight drop-shadow-[0_2px_0_rgba(0,0,0,0.6)]" style={{ WebkitTextStroke: '2px #111827', lineHeight: '0.9' }}>
