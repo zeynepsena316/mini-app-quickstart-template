@@ -61,6 +61,7 @@ export default function Game() {
   const anxietyRef = React.useRef(anxiety);
   const scoreRef = React.useRef(score);
   const keysPressed = React.useRef<{[key: string]: boolean}>({});
+  const keysRef = React.useRef<Record<string, boolean>>({});
   const touchStart = React.useRef<{x: number, y: number} | null>(null);
   React.useEffect(() => { anxietyRef.current = anxiety; }, [anxiety]);
   React.useEffect(() => { scoreRef.current = score; }, [score]);
@@ -88,28 +89,42 @@ export default function Game() {
     ghostImg.src = "/sprites/ghost.svg";
 
     // simple catch sound via Web Audio API
-    const audioCtx = typeof window !== 'undefined' && (new (window.AudioContext || (window as any).webkitAudioContext)());
+    let audioCtx: AudioContext | null = null;
     function playCatchSound() {
-      if (!audioCtx) return;
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = 'square';
-      o.frequency.value = 420; // start freq
-      g.gain.value = 0.08; // low volume
-      o.connect(g);
-      g.connect(audioCtx.destination);
-      o.start();
-      // quick down-chirp
-      const nowA = audioCtx.currentTime;
-      o.frequency.setValueAtTime(420, nowA);
-      o.frequency.exponentialRampToValueAtTime(180, nowA + 0.18);
-      g.gain.exponentialRampToValueAtTime(0.0001, nowA + 0.2);
-      o.stop(nowA + 0.22);
+      try {
+        if (!audioCtx && typeof window !== 'undefined') {
+          audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        }
+        if (!audioCtx) return;
+        
+        // Resume audio context if suspended (user interaction required)
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'square';
+        o.frequency.value = 420; // start freq
+        g.gain.value = 0.08; // low volume
+        o.connect(g);
+        g.connect(audioCtx.destination);
+        o.start();
+        // quick down-chirp
+        const nowA = audioCtx.currentTime;
+        o.frequency.setValueAtTime(420, nowA);
+        o.frequency.exponentialRampToValueAtTime(180, nowA + 0.18);
+        g.gain.exponentialRampToValueAtTime(0.0001, nowA + 0.2);
+        o.stop(nowA + 0.22);
+      } catch (e) {
+        // Silently fail if audio context not available
+        console.log('Audio playback failed:', e);
+      }
     }
 
     let req = 0;
     const startPos = { x: 2 * TILE + TILE / 2, y: 2 * TILE + TILE / 2 };
-    const player: Vec & { speed: number; invulnerableUntil?: number } = { x: startPos.x, y: startPos.y, speed: 2 };
+    const player: Vec & { speed: number; invulnerableUntil?: number } = { x: startPos.x, y: startPos.y, speed: 1.5 };
     const ghostSpawns = [
       { x: 11 * TILE + TILE / 2, y: 3 * TILE + TILE / 2 },
       { x: 12 * TILE + TILE / 2, y: 16 * TILE + TILE / 2 },
@@ -118,12 +133,19 @@ export default function Game() {
     const ghosts: Array<Vec & { vx: number; vy: number; speed: number; disabledUntil?: number; target?: {x:number;y:number}; lastPick?: number }> = ghostSpawns.map((p, i) => ({ x: p.x, y: p.y, vx: 0, vy: 0, speed: 0.55 + i * 0.08, target: undefined, lastPick: performance.now() }));
 
     let last = performance.now();
-    let keys: Record<string, boolean> = {};
+    let keys: Record<string, boolean> = keysRef.current;
     let pausedUntil = 0; // breathe pause
     const particles: Array<{ x:number; y:number; vx:number; vy:number; life:number; color:string; size:number }> = [];
     let pelletsCollected = 0; // Track pellets collected for difficulty scaling
 
     function handleKey(e: KeyboardEvent) {
+      // Escape key to toggle menu
+      if (e.type === "keydown" && e.key === "Escape") {
+        e.preventDefault();
+        setMenuOpen(m => !m);
+        return;
+      }
+      
       // ignore controls when the game is over
       if (gameOver) return;
       if (e.type === "keydown") {
@@ -326,8 +348,8 @@ export default function Game() {
             }
           }
           // attempt to move but block on walls per axis
-          const nextX = player.x + (dx / mag) * player.speed * speedMult * shiftMultiplier * fleeBoost * dt * 8;
-          const nextY = player.y + (dy / mag) * player.speed * speedMult * shiftMultiplier * fleeBoost * dt * 8;
+          const nextX = player.x + (dx / mag) * player.speed * speedMult * shiftMultiplier * fleeBoost * dt * 6;
+          const nextY = player.y + (dy / mag) * player.speed * speedMult * shiftMultiplier * fleeBoost * dt * 6;
           // check X move alone
           if (tileAtXY(nextX, player.y) === 0) player.x = nextX;
           // check Y move alone
@@ -677,46 +699,12 @@ export default function Game() {
       ctx.strokeText(`Score: ${scoreRef.current}`, canvas.width - 120, 28);
       ctx.fillText(`Score: ${scoreRef.current}`, canvas.width - 120, 28);
 
-      // Home icon at top-left
-      const iconSize = 28;
-      const iconX = 14;
-      const iconY = 50;
-      ctx.save();
-      ctx.lineWidth = 2.5;
-      ctx.strokeStyle = "#06b6d4"; // cyan theme color
-      // Roof (filled triangle)
-      ctx.beginPath();
-      ctx.moveTo(iconX + iconSize*0.1, iconY + iconSize*0.6);
-      ctx.lineTo(iconX + iconSize*0.5, iconY + iconSize*0.05);
-      ctx.lineTo(iconX + iconSize*0.9, iconY + iconSize*0.6);
-      ctx.closePath();
-      ctx.fillStyle = "#06b6d4";
-      ctx.fill();
-      ctx.stroke();
-      // Body
-      const bodyX = iconX + iconSize*0.2;
-      const bodyY = iconY + iconSize*0.58;
-      const bodyW = iconSize*0.6;
-      const bodyH = iconSize*0.37;
-      ctx.beginPath();
-      (ctx as any).roundRect(bodyX, bodyY, bodyW, bodyH, 4);
-      ctx.stroke();
-      // Door
-      ctx.beginPath();
-      ctx.moveTo(iconX + iconSize*0.52, iconY + iconSize*0.68);
-      ctx.arc(iconX + iconSize*0.52, iconY + iconSize*0.74, iconSize*0.08, Math.PI, 0, false);
-      ctx.lineTo(iconX + iconSize*0.6, iconY + iconSize*0.95);
-      ctx.lineTo(iconX + iconSize*0.44, iconY + iconSize*0.95);
-      ctx.closePath();
-      ctx.stroke();
-      ctx.restore();
-
-      // Menu dropdown when home icon is clicked
+      // Menu dropdown (no icon, just menu)
       if (menuOpen) {
         const menuW = 140;
         const menuH = 90;
-        const menuX = iconX;
-        const menuY = iconY + iconSize + 6;
+        const menuX = 14;
+        const menuY = 78;
         ctx.save();
         ctx.globalAlpha = 0.95;
         ctx.fillStyle = "#1e293b";
@@ -769,53 +757,65 @@ export default function Game() {
 
     req = requestAnimationFrame(step);
 
-    // Touch swipe handlers
+    // Touch continuous control handlers
+    let touchMoveInterval: NodeJS.Timeout | null = null;
     const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
       if (e.touches.length > 0) {
         touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       }
     };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (!touchStart.current) return;
-      const touchEnd = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-      const dx = touchEnd.x - touchStart.current.x;
-      const dy = touchEnd.y - touchStart.current.y;
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (!touchStart.current || e.touches.length === 0) return;
+      const currentTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      const dx = currentTouch.x - touchStart.current.x;
+      const dy = currentTouch.y - touchStart.current.y;
       const distance = Math.max(Math.abs(dx), Math.abs(dy));
-      if (distance > 40) {
+      
+      // Continuous movement while touch is held
+      if (distance > 30) {
         if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx < 0) keys.ArrowLeft = true;
-          else keys.ArrowRight = true;
-          setTimeout(() => { keys.ArrowLeft = false; keys.ArrowRight = false; }, 100);
+          keys.ArrowLeft = dx < 0;
+          keys.ArrowRight = dx > 0;
+          keys.ArrowUp = false;
+          keys.ArrowDown = false;
         } else {
-          if (dy < 0) keys.ArrowUp = true;
-          else keys.ArrowDown = true;
-          setTimeout(() => { keys.ArrowUp = false; keys.ArrowDown = false; }, 100);
+          keys.ArrowUp = dy < 0;
+          keys.ArrowDown = dy > 0;
+          keys.ArrowLeft = false;
+          keys.ArrowRight = false;
         }
       }
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Release all movement keys
+      keys.ArrowLeft = false;
+      keys.ArrowRight = false;
+      keys.ArrowUp = false;
+      keys.ArrowDown = false;
       touchStart.current = null;
+      if (touchMoveInterval) {
+        clearInterval(touchMoveInterval);
+        touchMoveInterval = null;
+      }
+    };
+    const handleTouchCancel = (e: TouchEvent) => {
+      handleTouchEnd(e);
     };
 
-    // Canvas click handler for home menu
+    // Canvas click handler for menu
     const handleCanvasClick = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      const iconSize = 28;
-      const iconX = 14;
-      const iconY = 50;
-      
-      // Home icon click
-      if (x >= iconX && x <= iconX + iconSize && y >= iconY && y <= iconY + iconSize) {
-        setMenuOpen(m => !m);
-        return;
-      }
       
       // Menu click detection
       if (menuOpen) {
         const menuW = 140;
         const menuH = 90;
-        const menuX = iconX;
-        const menuY = iconY + iconSize + 6;
+        const menuX = 14;
+        const menuY = 78;
         if (x >= menuX && x <= menuX + menuW && y >= menuY && y <= menuY + menuH) {
           if (y <= menuY + 30) {
             setRunning(true);
@@ -833,16 +833,13 @@ export default function Game() {
       }
     };
 
-    canvas.addEventListener('touchstart', handleTouchStart, false);
-    canvas.addEventListener('touchend', handleTouchEnd, false);
+    // Canvas touch events removed - using on-screen buttons instead
     canvas.addEventListener('click', handleCanvasClick, false);
 
     return () => {
       cancelAnimationFrame(req);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
-      canvas.removeEventListener('touchstart', handleTouchStart, false);
-      canvas.removeEventListener('touchend', handleTouchEnd, false);
       canvas.removeEventListener('click', handleCanvasClick, false);
     };
   }, [runKey]);
@@ -882,7 +879,7 @@ export default function Game() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900 overflow-hidden">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900 overflow-hidden" style={{ overscrollBehavior: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '360px', marginBottom: 8 }}>
         <h2 className="text-2xl font-bold text-white">Scared Beaver Game</h2>
         <button onClick={handleHome} style={{ padding: '8px 20px', background: '#64748b', color: '#fff', borderRadius: 8, fontWeight: 600, border: 'none', fontSize: 14, cursor: 'pointer' }}>Home</button>
@@ -928,12 +925,45 @@ export default function Game() {
           </div>
         )}
       </div>
-      <div className="flex gap-4 mt-4">
-        <div className="text-lg text-gray-300">Arrow keys / WASD — Shift: Dash — Space: Breathe</div>
-      </div>
-      <div className="text-xl font-bold text-gray-200 mt-3">Lives: <span className="text-red-400">{lives}</span> — Score: <span className="text-yellow-400">{score}</span></div>
-      {!running && started && !gameOver && (
-        <div className="mt-2 text-base text-yellow-200">Paused — Press any key to continue</div>
+      
+      {/* Mobile Controls - Arrow Buttons */}
+      {started && !gameOver && (
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 9999, pointerEvents: 'auto' }}>
+          <button 
+            onMouseDown={(e) => { e.preventDefault(); keysRef.current.ArrowUp = true; }}
+            onMouseUp={(e) => { e.preventDefault(); keysRef.current.ArrowUp = false; }}
+            onTouchStart={(e) => { e.preventDefault(); keysRef.current.ArrowUp = true; }}
+            onTouchEnd={(e) => { e.preventDefault(); keysRef.current.ArrowUp = false; }}
+            style={{ width: 70, height: 70, background: '#06b6d4', border: '3px solid #0891b2', borderRadius: 12, color: '#fff', fontSize: 28, fontWeight: 700, cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+            ▲
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              onMouseDown={(e) => { e.preventDefault(); keysRef.current.ArrowLeft = true; }}
+              onMouseUp={(e) => { e.preventDefault(); keysRef.current.ArrowLeft = false; }}
+              onTouchStart={(e) => { e.preventDefault(); keysRef.current.ArrowLeft = true; }}
+              onTouchEnd={(e) => { e.preventDefault(); keysRef.current.ArrowLeft = false; }}
+              style={{ width: 70, height: 70, background: '#06b6d4', border: '3px solid #0891b2', borderRadius: 12, color: '#fff', fontSize: 28, fontWeight: 700, cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+              ◄
+            </button>
+            <button 
+              onMouseDown={(e) => { e.preventDefault(); keysRef.current.ArrowDown = true; }}
+              onMouseUp={(e) => { e.preventDefault(); keysRef.current.ArrowDown = false; }}
+              onTouchStart={(e) => { e.preventDefault(); keysRef.current.ArrowDown = true; }}
+              onTouchEnd={(e) => { e.preventDefault(); keysRef.current.ArrowDown = false; }}
+              style={{ width: 70, height: 70, background: '#06b6d4', border: '3px solid #0891b2', borderRadius: 12, color: '#fff', fontSize: 28, fontWeight: 700, cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+              ▼
+            </button>
+            <button 
+              onMouseDown={(e) => { e.preventDefault(); keysRef.current.ArrowRight = true; }}
+              onMouseUp={(e) => { e.preventDefault(); keysRef.current.ArrowRight = false; }}
+              onTouchStart={(e) => { e.preventDefault(); keysRef.current.ArrowRight = true; }}
+              onTouchEnd={(e) => { e.preventDefault(); keysRef.current.ArrowRight = false; }}
+              style={{ width: 70, height: 70, background: '#06b6d4', border: '3px solid #0891b2', borderRadius: 12, color: '#fff', fontSize: 28, fontWeight: 700, cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>
+              ►
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
