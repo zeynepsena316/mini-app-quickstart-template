@@ -111,8 +111,8 @@ function JumpGame({
     }
 
     // Oyun döngüsü
-  let score = 0;
   let lastPlatformY = player.y;
+  let jumpedPlatformCount = 0; // Atlanan platform sayısı (Score olarak kullanılacak)
     let gameOver = false;
 
     function step() {
@@ -138,6 +138,11 @@ function JumpGame({
           player.y = p.y - player.h;
           player.vy = jumpImpulse;
           touchedPlatform = true;
+          // Her platforma ilk temasında sayaç artır
+          if (!(p as any)._jumped) {
+            jumpedPlatformCount++;
+            (p as any)._jumped = true;
+          }
         }
       }
       // Son güvenli konumu kaydet (platforma değdiyse)
@@ -150,20 +155,12 @@ function JumpGame({
         const diff = height / 2 - player.y;
         player.y = height / 2;
         for (const p of platforms) p.y += diff;
-        // Skor: her platform geçişinde 5 puan artır
-        let scoreChanged = false;
-        while (lastPlatformY - player.y >= platformGap) {
-          score += 5;
-          lastPlatformY -= platformGap;
-          scoreChanged = true;
-        }
-        if (scoreChanged && onScoreChange) onScoreChange(score);
         // Yükseldikçe güvenli konumu güncelle
         lastSafePosition = { x: player.x, y: player.y };
       }
 
-      // Zorluk artır: skor 50 olunca gravity ve platform aralığı değişsin
-      if (!difficultyIncreased && score >= 50) {
+      // Zorluk artır: 50 blok geçilince gravity ve platform aralığı değişsin
+      if (!difficultyIncreased && jumpedPlatformCount >= 10) {
         gravity = 0.6;
         jumpImpulse = -11;
         platformGap = 100;
@@ -202,16 +199,20 @@ function JumpGame({
       // Arka planı şeffaf bırak, sadece platform ve karakter çiz
       for (const p of platforms) drawPlatform(p);
       drawBeaver(player.x, player.y, player.w, player.h);
-      // Score (sol üst)
-      ctx.fillStyle = "#222";
-      ctx.font = "16px sans-serif";
-      ctx.fillText(`Score: ${score}`, 10, 24);
+      // Score (sol üst): Atlanan blok sayısı
+      ctx.fillStyle = "#1976d2";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(`Score: ${jumpedPlatformCount}`, 10, 24);
+      ctx.textAlign = "left";
       // Lives (sağ üst)
       ctx.font = "20px sans-serif";
       ctx.fillStyle = "#e53935";
       let heart = "\u2665"; // ♥
       let livesText = Array(lives).fill(heart).join(" ");
-      ctx.fillText(livesText, width - 24 * lives - 10, 28);
+      ctx.textAlign = "right";
+      ctx.fillText(livesText, width - 10, 28);
+      ctx.textAlign = "left";
       if (gameOver) {
         ctx.fillStyle = "#fff";
         ctx.font = "bold 32px sans-serif";
