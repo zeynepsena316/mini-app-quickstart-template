@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -14,6 +14,20 @@ const MOODS = [
 
 export default function Home() {
 	const router = useRouter();
+	const videoRef = useRef<HTMLVideoElement>(null);
+
+	useEffect(() => {
+		const video = videoRef.current;
+		if (video) {
+			video.muted = true;
+			video.play().then(() => {
+				setTimeout(() => {
+					video.muted = false;
+					video.play();
+				}, 300);
+			});
+		}
+	}, []);
 
 	return (
 		<div className="min-h-screen flex items-center justify-center p-0 bg-black">
@@ -22,13 +36,13 @@ export default function Home() {
 					<div className="absolute inset-0 bg-black/40 z-0" />
 					<div className="relative aspect-[9/16] bg-black overflow-hidden">
 						<video
-							ref={React.useRef<HTMLVideoElement>(null)}
+							ref={videoRef}
 							className="absolute inset-0 w-full h-full object-cover pointer-events-none"
 							style={{ transform: 'scale(1.39)', transformOrigin: 'center center' }}
 							autoPlay
 							loop
-							muted
 							playsInline
+							muted
 						>
 							<source src="/background.mp4" type="video/mp4" />
 							<source src="/intro.mp4" type="video/mp4" />
