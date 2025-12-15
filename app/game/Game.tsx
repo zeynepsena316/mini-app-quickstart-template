@@ -869,12 +869,12 @@ export default function Game() {
   };
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900 overflow-hidden" style={{ touchAction: 'none', overscrollBehavior: 'none' }}>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-900 overflow-hidden" style={{ overscrollBehavior: 'none', touchAction: 'pan-x pan-y' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '360px', marginBottom: 8 }}>
         <h2 className="text-2xl font-bold text-white">Scared Beaver Game</h2>
         <button onClick={handleHome} style={{ padding: '8px 20px', background: '#64748b', color: '#fff', borderRadius: 8, fontWeight: 600, border: 'none', fontSize: 14, cursor: 'pointer' }}>Home</button>
       </div>
-      <div className="relative bg-slate-800 rounded-3xl shadow-2xl overflow-hidden" style={{ width: '360px', height: '640px', touchAction: 'none' }}>
+      <div className="relative bg-slate-800 rounded-3xl shadow-2xl overflow-hidden" style={{ width: '360px', height: '640px', touchAction: 'manipulation' }}>
         <canvas ref={canvasRef} className="block" style={{ touchAction: 'none' }} />
         
         {/* Start Screen */}
@@ -915,6 +915,38 @@ export default function Game() {
           </div>
         )}
       </div>
+      
+      {/* Mobile Controls - Arrow Buttons */}
+      {started && !gameOver && (
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 100 }}>
+          <button 
+            onTouchStart={() => { keys.ArrowUp = true; }}
+            onTouchEnd={() => { keys.ArrowUp = false; }}
+            style={{ width: 60, height: 60, background: 'rgba(6, 182, 212, 0.8)', border: '2px solid #06b6d4', borderRadius: 12, color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}>
+            ▲
+          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button 
+              onTouchStart={() => { keys.ArrowLeft = true; }}
+              onTouchEnd={() => { keys.ArrowLeft = false; }}
+              style={{ width: 60, height: 60, background: 'rgba(6, 182, 212, 0.8)', border: '2px solid #06b6d4', borderRadius: 12, color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}>
+              ◄
+            </button>
+            <button 
+              onTouchStart={() => { keys.ArrowDown = true; }}
+              onTouchEnd={() => { keys.ArrowDown = false; }}
+              style={{ width: 60, height: 60, background: 'rgba(6, 182, 212, 0.8)', border: '2px solid #06b6d4', borderRadius: 12, color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}>
+              ▼
+            </button>
+            <button 
+              onTouchStart={() => { keys.ArrowRight = true; }}
+              onTouchEnd={() => { keys.ArrowRight = false; }}
+              style={{ width: 60, height: 60, background: 'rgba(6, 182, 212, 0.8)', border: '2px solid #06b6d4', borderRadius: 12, color: '#fff', fontSize: 24, fontWeight: 700, cursor: 'pointer', userSelect: 'none' }}>
+              ►
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
