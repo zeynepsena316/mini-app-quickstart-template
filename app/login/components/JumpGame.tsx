@@ -159,12 +159,12 @@ function JumpGame({
         lastSafePosition = { x: player.x, y: player.y };
       }
 
-      // Zorluk artır: 50 blok geçilince gravity ve platform aralığı değişsin
-      if (!difficultyIncreased && jumpedPlatformCount >= 10) {
-        gravity = 0.6;
-        jumpImpulse = -11;
-        platformGap = 100;
-        difficultyIncreased = true;
+      // Her 25 blokta bir zorluk artır
+      if (jumpedPlatformCount > 0 && jumpedPlatformCount % 25 === 0) {
+        // Zorluk seviyesini blok sayısına göre artır
+        gravity = 0.4 + 0.1 * Math.floor(jumpedPlatformCount / 25);
+        jumpImpulse = -10 - Math.floor(jumpedPlatformCount / 25);
+        platformGap = 80 + 10 * Math.floor(jumpedPlatformCount / 25);
       }
 
       // Platformları yenile
