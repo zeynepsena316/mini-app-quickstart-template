@@ -1,4 +1,6 @@
+
 "use client"
+const MAX_UNEXTINGUISHED = 10; // Oyun bitirme eşiği (ateş sayısı)
 
 import React, { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -11,11 +13,21 @@ type Fire = {
   timeoutId?: number
   exploding?: boolean // patlama animasyonu için
 }
-
-const MAX_UNEXTINGUISHED = 10; // Oyun bitirme eşiği (ateş sayısı)
 const GAME_OVER_SCORE = -200; // Skor eşiği
 const WIN_SCORE = 1000;
 export default function GameFirePage() {
+    // Dinamik arka plan rengi: başta mavi, ateş arttıkça kırmızıya yaklaşır
+    function getBgColor() {
+      if (gameOver) return '#b80000'; // kaybedince tam kırmızı
+      // 0 ateş: mavi, MAX_UNEXTINGUISHED: kırmızı
+      const fireCount = fires.length;
+      const t = Math.min(1, fireCount / MAX_UNEXTINGUISHED);
+      // interpolate: mavi (#1e90ff) -> kırmızı (#b80000)
+      const r = Math.round(30 + (184-30)*t);
+      const g = Math.round(144 + (0-144)*t);
+      const b = Math.round(255 + (0-255)*t);
+      return `rgb(${r},${g},${b})`;
+    }
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null)
   const beaverRef = useRef<HTMLDivElement | null>(null)
@@ -186,9 +198,29 @@ export default function GameFirePage() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2 style={{ marginTop: 0 }}>Küçük Kunduz — Ateş Söndürme</h2>
-      {/* Skor tabelası sol üst köşede sabit */}
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        width: "100vw",
+        maxWidth: 480,
+        height: "100vh",
+        maxHeight: 900,
+        margin: "0 auto",
+        background: flash ? "#ffeaea" : getBgColor(),
+        overflow: "hidden",
+        borderRadius: 18,
+        boxShadow: "0 2px 24px #b8000033",
+        touchAction: "manipulation",
+        padding: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        transition: 'background 0.5s'
+      }}
+    >
+      {/* Skor ve home butonu */}
       <div style={{
         position: "absolute",
         top: 18,
@@ -200,36 +232,36 @@ export default function GameFirePage() {
         fontWeight: 700,
         fontSize: 20,
         color: "#b80000",
-        boxShadow: "0 2px 8px #b8000033"
+        boxShadow: "0 2px 8px #b8000033",
+        display: "flex",
+        alignItems: "center",
+        gap: 12
       }}>
-        Skor: {score}
+        <span>Skor: {score}</span>
       </div>
-      {/* Sıfırla butonu sağ üst köşede */}
       <button
-        onClick={() => {
-          setScore(0);
-          setFires([]);
-          setGameOver(false);
-          setPlaying(false);
-          setSpawnInterval(INITIAL_SPAWN);
-          setFireLifespan(INITIAL_LIFESPAN);
-        }}
+        onClick={() => router.push("/")}
         style={{
           position: "absolute",
           top: 18,
           right: 18,
           zIndex: 10,
           background: "#fff",
-          color: "#b80000",
+          color: "#1e90ff",
           fontWeight: 700,
-          fontSize: 16,
-          border: "2px solid #b80000",
+          fontSize: 22,
+          border: "2px solid #1e90ff",
           borderRadius: 10,
-          padding: "8px 18px",
-          boxShadow: "0 2px 8px #b8000033",
-          cursor: "pointer"
+          padding: "8px 14px",
+          boxShadow: "0 2px 8px #1e90ff33",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center"
         }}
-      >Sıfırla</button>
+        aria-label="Ana Sayfa"
+      >
+        <svg width="24" height="24" fill="none" stroke="#1e90ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M3 12L12 3l9 9"/><path d="M9 21V9h6v12"/></svg>
+      </button>
 
       {/* Mobilde sadeleştirilmiş ayarlar */}
       {/* Oyun ayarları ve zorluk göstergesi kaldırıldı */}
@@ -323,44 +355,20 @@ export default function GameFirePage() {
             Ekrana çıkan ateşleri hızlıca tıkla ve söndür! Ateşler patlarsa puan kaybedersin.<br /><br />
             <b>Kurallar:</b><br />
             Bir ateşi söndürmek için üstüne bir, iki veya üç kere tıkla.<br />
-            Söndürdüğün ateş <b>+10 puan</b>, süresi dolan ateş <b>-5 puan</b>.
+            Söndürdüğün ateş <b>+10 puan</b>, süresi dolan ateş <b>-5 puan</b>.<br />
+            1000 puana ulaşırsan kazanırsın.<br />
           </div>
           <button onClick={() => {
             setScore(0);
             setFires([]);
             setPlaying(true);
+            setGameOver(false);
+            setWin(false);
             setSpawnInterval(INITIAL_SPAWN);
             setFireLifespan(INITIAL_LIFESPAN);
           }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Başla</button>
         </div>
       )}
-        <div style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          background: "rgba(255,255,255,0.97)",
-          zIndex: 20,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 18,
-        }}>
-          <img src="/fireandbeaver/firebeaver.png" alt="Fire Beaver" style={{ width: 110, height: 110, marginBottom: 18, borderRadius: "50%", boxShadow: "0 4px 24px #b8000033" }} />
-          <h2 style={{ color: "#b80000", fontWeight: 900, fontSize: 32, margin: 0, marginBottom: 10, letterSpacing: 2 }}>Firefighter Beaver</h2>
-          <div style={{ color: "#b80000", fontSize: 20, marginBottom: 18, textAlign: "center", maxWidth: 260 }}>
-            Tap or click the screen to extinguish fires!<br />
-            If too many fires explode, the game is over.<br />
-            <b>Rules:</b> Click each fire to put it out. Some fires need more than one click.<br />
-            Reach a score of 1000 to win.<br />
-          </div>
-          <div style={{ display: "flex", gap: 16 }}>
-            <button onClick={() => setPlaying(true)} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Start</button>
-            <button onClick={() => router.push("/")} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#1e90ff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #1e90ff33", marginBottom: 10 }}>Go Back</button>
-          </div>
-        </div>
 // ...existing code...
         {/* beaver top center */}
         <div
@@ -439,6 +447,10 @@ export default function GameFirePage() {
   0% { opacity: 0.2; transform: scale(0.7) rotate(-10deg); }
   60% { opacity: 1; transform: scale(1.2) rotate(8deg); }
   100% { opacity: 0.1; transform: scale(1.7) rotate(-20deg); }
+}
+@keyframes boom-bg {
+  0% { background: #1e90ff; }
+  100% { background: #b80000; }
 }
 @keyframes win-anim {
   0% { opacity: 0.8; transform: scale(1) rotate(-2deg); }
