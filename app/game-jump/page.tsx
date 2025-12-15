@@ -20,7 +20,7 @@ export default function Page() {
   }
 
   return (
-    <div style={{ minHeight: 700, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+    <div style={{ width: 360, height: 640, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative", margin: "0 auto", background: "#f8fafd", borderRadius: 18, boxShadow: "0 4px 24px #0001" }}>
       {/* Home Icon Button (top right) */}
       {started && !gameOver && !paused && (
         <HomeIconButton onClick={() => { setPaused(true); setShowMenu(true); }} />
