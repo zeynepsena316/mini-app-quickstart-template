@@ -8,6 +8,7 @@ export default function CryingBeaverGame() {
   const [score, setScore] = React.useState(0);
   const [showHomeModal, setShowHomeModal] = React.useState(false);
   const [showStartModal, setShowStartModal] = React.useState(true);
+  const [gameOver, setGameOver] = React.useState(false);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -72,6 +73,8 @@ export default function CryingBeaverGame() {
     }[] = [];
     let tearTimer = 0;
     let localScore = 0;
+    let waterLevel = 0;
+    let gameOverRef = { value: false };
 
     // PNG assets
     const beaverImg = new window.Image();
@@ -174,42 +177,50 @@ export default function CryingBeaverGame() {
       if (bucket.x < 0) bucket.x = 0;
       if (bucket.x + bucket.w > width) bucket.x = width - bucket.w;
 
-      // Tear spawn (make tears larger)
-        tearTimer++;
-        if (tearTimer > 55) {
-          const tearW1 = 32 + Math.random() * 22; // larger min/max
-          const tearH1 = tearW1 * 0.8;
-          const tearW2 = 32 + Math.random() * 22;
-          const tearH2 = tearW2 * 0.8;
-          tears.push({
-            x: beaver.x + beaver.w * 0.28,
-            y: beaver.y + beaver.h * 0.38,
-            vy: 2.2 + Math.random() * 1.5,
-            vx: (Math.random() - 0.5) * 1.2,
-            t: 0,
-            phase: 0,
-            caught: false,
-            dirTimer: 0,
-            dirInterval: 10 + Math.floor(Math.random() * 18),
-            isLeft: true,
-            width: tearW1,
-            height: tearH1,
-          });
-          tears.push({
-            x: beaver.x + beaver.w * 0.72,
-            y: beaver.y + beaver.h * 0.38,
-            vy: 2.2 + Math.random() * 1.5,
-            vx: (Math.random() - 0.5) * 1.2,
-            t: 0,
-            phase: 0,
-            caught: false,
-            dirTimer: 0,
-            dirInterval: 10 + Math.floor(Math.random() * 18),
-            isLeft: false,
-            width: tearW2,
-            height: tearH2,
-          });
-          tearTimer = 0;
+      // Tear spawn (make tears larger) - spawn more tears as water rises
+        // Stop spawning tears when game is over
+        if (!gameOverRef.value) {
+          tearTimer++;
+          // Calculate spawn rate based on water level (lower spawn interval = more tears)
+          const waterPercentage = waterLevel / (height * 1.2);
+          const baseSpawnInterval = 55;
+          const spawnInterval = Math.max(25, baseSpawnInterval - (waterPercentage * 30));
+          
+          if (tearTimer > spawnInterval) {
+            const tearW1 = 32 + Math.random() * 22; // larger min/max
+            const tearH1 = tearW1 * 0.8;
+            const tearW2 = 32 + Math.random() * 22;
+            const tearH2 = tearW2 * 0.8;
+            tears.push({
+              x: beaver.x + beaver.w * 0.28,
+              y: beaver.y + beaver.h * 0.38,
+              vy: 2.2 + Math.random() * 1.5,
+              vx: (Math.random() - 0.5) * 1.2,
+              t: 0,
+              phase: 0,
+              caught: false,
+              dirTimer: 0,
+              dirInterval: 10 + Math.floor(Math.random() * 18),
+              isLeft: true,
+              width: tearW1,
+              height: tearH1,
+            });
+            tears.push({
+              x: beaver.x + beaver.w * 0.72,
+              y: beaver.y + beaver.h * 0.38,
+              vy: 2.2 + Math.random() * 1.5,
+              vx: (Math.random() - 0.5) * 1.2,
+              t: 0,
+              phase: 0,
+              caught: false,
+              dirTimer: 0,
+              dirInterval: 10 + Math.floor(Math.random() * 18),
+              isLeft: false,
+              width: tearW2,
+              height: tearH2,
+            });
+            tearTimer = 0;
+          }
         }
 
       // Move tears (up then down, random drift)
@@ -247,8 +258,29 @@ export default function CryingBeaverGame() {
           setScore(localScore);
         }
       }
+      // Check for newly missed tears and update water level
+      for (const tear of tears) {
+        if (!tear.caught && tear.y >= height && !('alreadyCounted' in tear)) {
+          (tear as any).alreadyCounted = true;
+          // Each missed tear increases water level
+          waterLevel = Math.min(height * 1.2, waterLevel + 12);
+        }
+      }
+
       // Remove out-of-bounds or caught tears
       tears = tears.filter((t) => t.y < height && !t.caught);
+
+      // Check game over condition (water reaches beaver's neck)
+      // Beaver is at position beaver.y, and neck is roughly at beaver.y + beaver.h * 0.25
+      // Water fills from bottom, so if waterLevel is high enough to cover the neck area
+      const beaverNeckY = beaver.y + beaver.h * 0.3;
+      const waterSurfaceY = height - waterLevel;
+      
+      // Game over when water surface goes above beaver's neck (with some margin)
+      if (waterSurfaceY < beaverNeckY && !gameOverRef.value) {
+        gameOverRef.value = true;
+        setGameOver(true);
+      }
 
       // Draw
       if (!ctx) return;
@@ -293,9 +325,23 @@ export default function CryingBeaverGame() {
       drawBeaver(beaver.x, beaver.y, beaver.w, beaver.h);
       for (const tear of tears) drawTear(tear.x, tear.y, tear.width, tear.height, tear.phase, tear.isLeft);
       drawBucket(bucket.x, bucket.y, bucket.w, bucket.h);
+      
+      // Draw water level
+      if (waterLevel > 0) {
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.3)';
+        ctx.fillRect(0, height - waterLevel, width, waterLevel);
+        // Water surface line
+        ctx.strokeStyle = 'rgba(0, 100, 200, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, height - waterLevel);
+        ctx.lineTo(width, height - waterLevel);
+        ctx.stroke();
+      }
+      
       ctx.fillStyle = "#1976d2";
       ctx.font = "18px sans-serif";
-      ctx.fillText(`Toplanan yaş: ${localScore}`, 10, 30);
+      ctx.fillText(`Collected Tears: ${localScore}`, 10, 30);
       requestAnimationFrame(step);
     }
     step();
@@ -356,12 +402,13 @@ export default function CryingBeaverGame() {
             <div style={{ fontSize: 28, fontWeight: 700, color: "#1976d2", marginBottom: 8, textAlign: 'center' }}>Crying Beaver</div>
             <div style={{ color: "#1976d2", fontSize: 17, textAlign: "center", marginBottom: 8, fontWeight: 500 }}>
               Catch as many tears as you can with the bucket!<br/>
+              But beware - missed tears raise the water level!<br/>
             </div>
             <div style={{ color: "#334155", fontSize: 16, textAlign: "center", marginBottom: 10, lineHeight: 1.5 }}>
               <b style={{ color: '#1976d2' }}>Rules:</b><br/>
               Move the bucket left and right.<br/>
               Collect falling tears.<br/>
-              If you miss, the tear is lost.<br/>
+              If the water rises too high, you'll drown!<br/>
             </div>
             <div style={{ display: 'flex', gap: 16, width: '100%', marginTop: 8, justifyContent: 'center' }}>
               <button
@@ -404,8 +451,28 @@ export default function CryingBeaverGame() {
               >Resume Game</button>
               <button
                 style={{ width: "100%", padding: "12px 0", background: "#e5e7eb", color: "#1e293b", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", marginBottom: 8, cursor: "pointer" }}
-                onClick={() => { setScore(0); setShowHomeModal(false); }}
+                onClick={() => { setScore(0); setShowHomeModal(false); setGameOver(false); }}
               >Restart Game</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Game Over modal */}
+      {gameOver && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(100, 150, 255, 0.6)" }}>
+          <div style={{ background: "#fff", borderRadius: 24, boxShadow: "0 8px 32px #0004", padding: 32, display: "flex", flexDirection: "column", alignItems: "center", gap: 24, minWidth: 280, maxWidth: "90vw" }}>
+            <div style={{ fontSize: 32, fontWeight: 700, color: "#b80000", marginBottom: 8 }}>Drowned! 😵</div>
+            <div style={{ fontSize: 18, color: "#666", marginBottom: 16 }}>The water rose too high...</div>
+            <div style={{ fontSize: 24, fontWeight: 600, color: "#1976d2", marginBottom: 16 }}>Final Score: {score}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+              <button
+                style={{ width: "100%", padding: "14px 0", background: "#FFD700", color: "#000", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", cursor: "pointer" }}
+                onClick={() => { setScore(0); setGameOver(false); window.location.reload(); }}
+              >Try Again</button>
+              <button
+                style={{ width: "100%", padding: "14px 0", background: "#b80000", color: "#fff", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", cursor: "pointer" }}
+                onClick={() => { window.location.href = "/"; }}
+              >Go Home</button>
             </div>
           </div>
         </div>
@@ -421,7 +488,7 @@ export default function CryingBeaverGame() {
           pointerEvents: showStartModal ? 'none' : 'auto',
         }}
       />
-      <div style={{ fontWeight: 600, fontSize: 18, marginTop: 8 }}>Toplanan yaş: {score}</div>
+      <div style={{ fontWeight: 600, fontSize: 18, marginTop: 8 }}>Collected Tears: {score}</div>
     </div>
   );
 }
