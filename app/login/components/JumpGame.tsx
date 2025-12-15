@@ -50,6 +50,7 @@ function JumpGame({
 
     // Kunduz PNG yoksa SVG ile çiz
     function drawBeaver(x: number, y: number, w: number, h: number) {
+      if (!ctx) return;
       if (beaverImg.complete && beaverImg.naturalWidth > 0) {
         ctx.drawImage(beaverImg, x, y, w, h);
       } else {
