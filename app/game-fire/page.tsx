@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 
 type Fire = {
   id: number
@@ -13,7 +14,9 @@ type Fire = {
 
 const MAX_UNEXTINGUISHED = 10; // Oyun bitirme eşiği (ateş sayısı)
 const GAME_OVER_SCORE = -200; // Skor eşiği
+const WIN_SCORE = 1000;
 export default function GameFirePage() {
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null)
   const beaverRef = useRef<HTMLDivElement | null>(null)
   const nextId = useRef(1)
@@ -22,12 +25,15 @@ export default function GameFirePage() {
   const [playing, setPlaying] = useState(false)
   const [score, setScore] = useState(0)
   // Zorluk ilerlemesi için başlangıç değerleri (orta seviye)
-  const [spawnInterval, setSpawnInterval] = useState(500) // orta seviye başlasın
-  const [fireLifespan, setFireLifespan] = useState(900) // orta seviye başlasın
+  const INITIAL_SPAWN = 500;
+  const INITIAL_LIFESPAN = 900;
+  const [spawnInterval, setSpawnInterval] = useState(INITIAL_SPAWN) // orta seviye başlasın
+  const [fireLifespan, setFireLifespan] = useState(INITIAL_LIFESPAN) // orta seviye başlasın
   const [elapsed, setElapsed] = useState(0) // geçen süre (ms)
   const difficultyTimer = useRef<number | null>(null)
   const [flash, setFlash] = useState(false) // patlama flaşı için
   const [gameOver, setGameOver] = useState(false)
+  const [win, setWin] = useState(false)
   // Zaman ilerledikçe zorluk artsın: her 12 saniyede bir spawnInterval ve fireLifespan azalsın
   useEffect(() => {
     if (!playing) {
@@ -68,8 +74,15 @@ export default function GameFirePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, spawnInterval, fireLifespan])
 
-  // Oyun bitiş kontrolü
+  // Oyun bitiş ve kazanma kontrolü
   useEffect(() => {
+    if (playing && score >= WIN_SCORE) {
+      setPlaying(false)
+      setWin(true)
+      clearSpawnTimer()
+      clearAllFireTimers()
+      return;
+    }
     if (playing && (fires.length >= MAX_UNEXTINGUISHED || score <= GAME_OVER_SCORE)) {
       setPlaying(false)
       setGameOver(true)
@@ -198,6 +211,8 @@ export default function GameFirePage() {
           setFires([]);
           setGameOver(false);
           setPlaying(false);
+          setSpawnInterval(INITIAL_SPAWN);
+          setFireLifespan(INITIAL_LIFESPAN);
         }}
         style={{
           position: "absolute",
@@ -221,7 +236,7 @@ export default function GameFirePage() {
 
       {/* Start ekranı */}
       {/* Game Over ekranı */}
-      {gameOver && (
+  {gameOver && (
         <div style={{
           position: "absolute",
           top: 0,
@@ -239,13 +254,56 @@ export default function GameFirePage() {
           <img src="/fireandbeaver/boom.png" alt="Patlama" style={{ width: 120, height: 120, marginBottom: 18, borderRadius: "50%", boxShadow: "0 4px 24px #b8000033", animation: "boom-anim 1.2s infinite alternate" }} />
           <h2 style={{ color: "#fff", fontWeight: 900, fontSize: 32, margin: 0, marginBottom: 10, letterSpacing: 2 }}>GAME OVER</h2>
           <div style={{ color: "#fff", fontSize: 20, marginBottom: 18, textAlign: "center", maxWidth: 260 }}>
-            Çok fazla ateş patladı!<br />Skorun: <b>{score}</b>
+            Çok fazla ateş patladı veya skor çok düştü!<br />Skorun: <b>{score}</b>
           </div>
-          <button onClick={() => { setScore(0); setFires([]); setGameOver(false); setPlaying(false); }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#b80000", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Tekrar Oyna</button>
+          <div style={{ display: "flex", gap: 16 }}>
+            <button onClick={() => {
+              setScore(0);
+              setFires([]);
+              setGameOver(false);
+              setPlaying(false);
+              setSpawnInterval(INITIAL_SPAWN);
+              setFireLifespan(INITIAL_LIFESPAN);
+            }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#b80000", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Tekrar Oyna</button>
+            <button onClick={() => router.push("/")} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#1e90ff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #1e90ff33", marginBottom: 10 }}>Geri Dön</button>
+          </div>
         </div>
       )}
       {/* Start ekranı */}
-      {!playing && !gameOver && (
+      {win && (
+        <div style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "#e6fffaee",
+          zIndex: 30,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 18,
+        }}>
+          <img src="/fireandbeaver/coolbeaver.png" alt="Kazandınız" style={{ width: 120, height: 120, marginBottom: 18, borderRadius: "50%", boxShadow: "0 4px 24px #1e90ff33", animation: "win-anim 1.2s infinite alternate" }} />
+          <h2 style={{ color: "#1e90ff", fontWeight: 900, fontSize: 32, margin: 0, marginBottom: 10, letterSpacing: 2 }}>KAZANDINIZ!</h2>
+          <div style={{ color: "#1e90ff", fontSize: 20, marginBottom: 18, textAlign: "center", maxWidth: 260 }}>
+            Tebrikler, 1000 puana ulaştınız!<br />Skorunuz: <b>{score}</b>
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <button onClick={() => {
+              setScore(0);
+              setFires([]);
+              setWin(false);
+              setPlaying(false);
+              setSpawnInterval(INITIAL_SPAWN);
+              setFireLifespan(INITIAL_LIFESPAN);
+            }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#1e90ff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #1e90ff33", marginBottom: 10 }}>Tekrar Oyna</button>
+            <button onClick={() => router.push("/")} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#b80000", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Geri Dön</button>
+          </div>
+        </div>
+      )}
+      {!playing && !gameOver && !win && (
         <div style={{
           position: "absolute",
           top: 0,
@@ -262,10 +320,19 @@ export default function GameFirePage() {
         }}>
           <img src="/fireandbeaver/coolbeaver.png" alt="Kunduz" style={{ width: 120, height: 120, marginBottom: 18, borderRadius: "50%", boxShadow: "0 4px 24px #b8000033" }} />
           <h2 style={{ color: "#b80000", fontWeight: 900, fontSize: 28, margin: 0, marginBottom: 10 }}>Ateş Söndürme Oyunu</h2>
-          <div style={{ color: "#b80000", fontSize: 18, marginBottom: 18, textAlign: "center", maxWidth: 260 }}>
-            Ekrana çıkan ateşleri hızlıca tıkla ve söndür! Ateşler patlarsa puan kaybedersin.
+          <div style={{ color: "#b80000", fontSize: 18, marginBottom: 18, textAlign: "center", maxWidth: 320 }}>
+            Ekrana çıkan ateşleri hızlıca tıkla ve söndür! Ateşler patlarsa puan kaybedersin.<br /><br />
+            <b>Kurallar:</b><br />
+            Bir ateşi söndürmek için üstüne bir, iki veya üç kere tıkla.<br />
+            Söndürdüğün ateş <b>+10 puan</b>, süresi dolan ateş <b>-5 puan</b>.
           </div>
-          <button onClick={() => { setScore(0); setFires([]); setPlaying(true); }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Başla</button>
+          <button onClick={() => {
+            setScore(0);
+            setFires([]);
+            setPlaying(true);
+            setSpawnInterval(INITIAL_SPAWN);
+            setFireLifespan(INITIAL_LIFESPAN);
+          }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Başla</button>
         </div>
       )}
       <div
@@ -382,12 +449,15 @@ export default function GameFirePage() {
   60% { opacity: 1; transform: scale(1.2) rotate(8deg); }
   100% { opacity: 0.1; transform: scale(1.7) rotate(-20deg); }
 }
+@keyframes win-anim {
+  0% { opacity: 0.8; transform: scale(1) rotate(-2deg); }
+  60% { opacity: 1; transform: scale(1.1) rotate(2deg); }
+  100% { opacity: 0.8; transform: scale(1) rotate(-2deg); }
+}
 `}</style>
       </div>
 
-      <div style={{ marginTop: 10, color: "#333", fontSize: 14 }}>
-        Kurallar: Ateşler kunduzun yanlarından çıkıyor. Bir ateşi söndürmek için iki kere tıkla (her tıklama sayılır). Söndürdüğün ateş +10 puan, süresi dolan ateş -5 puan.
-      </div>
+      {/* Kurallar yazısı kaldırıldı, start ekranına taşındı */}
     </div>
   )
 }
