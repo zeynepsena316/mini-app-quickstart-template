@@ -4,43 +4,68 @@
 import React, { useEffect, useRef } from "react";
 
 // Klasik Doodle Jump tarzı, zıplayan kunduz ve çim platformlar
+type JumpGameProps = {
+  grassSrc?: string;
+  beaverSrc?: string;
+  onGameOver?: () => void;
+  onScoreChange?: (score: number) => void;
+};
+
 function JumpGame({
   grassSrc = "/games/grass.png",
   beaverSrc = "/games/beaver.png",
-}: {
-  grassSrc?: string;
-  beaverSrc?: string;
-}) {
+  onGameOver,
+  onScoreChange,
+}: JumpGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    useEffect(() => {
+      if (!canvasRef.current) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    let width = (canvas.width = Math.min(390, window.innerWidth - 40));
-    let height = (canvas.height = Math.min(700, window.innerHeight - 120));
+      // Touch hareketleri için değişkenler
+      let touchStartX: number | null = null;
 
-    // Karakter
-    const player = {
-      x: width / 2 - 24,
-      y: height - 60,
-      w: 48,
-      h: 48,
-      vy: -10,
-      vx: 0,
-    };
-    const gravity = 0.4;
-    const jumpImpulse = -10;
+      let width = (canvas.width = Math.min(390, window.innerWidth - 40));
+      let height = (canvas.height = Math.min(700, window.innerHeight - 120));
 
-    // Platformlar
-    let platforms = Array.from({ length: 8 }, (_, i) => ({
-      x: Math.random() * (width - 60),
-      y: height - i * 80 - 40,
-      w: 60,
-      h: 16,
-    }));
+      // Karakter
+      const player = {
+        x: width / 2 - 24,
+        y: height - 60,
+        w: 48,
+        h: 48,
+        vy: -10,
+        vx: 0,
+      };
+      let lastSafePosition = { x: player.x, y: player.y };
+  let gravity = 0.4;
+  let jumpImpulse = -10;
+  let platformGap = 80;
+  let difficultyIncreased = false;
+
+      // Canlar
+      let lives = 3;
+
+      // Platformlar
+      // İlk platformu kunduzun tam altına yerleştir, diğerlerini rastgele dağıt
+      let platforms = [
+        {
+          x: width / 2 - 30, // kunduzun tam altı (kunduz 48px, platform 60px)
+          y: height - 12,    // kunduzun alt kenarına yakın
+          w: 60,
+          h: 16,
+        },
+        // Diğer platformlar rastgele
+        ...Array.from({ length: 7 }, (_, i) => ({
+          x: Math.random() * (width - 60),
+          y: height - (i + 1) * 80 - 40,
+          w: 60,
+          h: 16,
+        }))
+      ];
 
     // Görseller
     const grassImg = new window.Image();
@@ -86,7 +111,8 @@ function JumpGame({
     }
 
     // Oyun döngüsü
-    let score = 0;
+  let score = 0;
+  let lastPlatformY = player.y;
     let gameOver = false;
 
     function step() {
@@ -100,6 +126,7 @@ function JumpGame({
       if (player.x > width) player.x = -player.w;
 
       // Platforma çarpma (sadece aşağı inerken)
+      let touchedPlatform = false;
       for (const p of platforms) {
         if (
           player.vy > 0 &&
@@ -110,7 +137,12 @@ function JumpGame({
         ) {
           player.y = p.y - player.h;
           player.vy = jumpImpulse;
+          touchedPlatform = true;
         }
+      }
+      // Son güvenli konumu kaydet (platforma değdiyse)
+      if (touchedPlatform) {
+        lastSafePosition = { x: player.x, y: player.y };
       }
 
       // Kamera yukarı takip
@@ -118,7 +150,24 @@ function JumpGame({
         const diff = height / 2 - player.y;
         player.y = height / 2;
         for (const p of platforms) p.y += diff;
-        score += Math.floor(diff);
+        // Skor: her platform geçişinde 5 puan artır
+        let scoreChanged = false;
+        while (lastPlatformY - player.y >= platformGap) {
+          score += 5;
+          lastPlatformY -= platformGap;
+          scoreChanged = true;
+        }
+        if (scoreChanged && onScoreChange) onScoreChange(score);
+        // Yükseldikçe güvenli konumu güncelle
+        lastSafePosition = { x: player.x, y: player.y };
+      }
+
+      // Zorluk artır: skor 50 olunca gravity ve platform aralığı değişsin
+      if (!difficultyIncreased && score >= 50) {
+        gravity = 0.6;
+        jumpImpulse = -11;
+        platformGap = 100;
+        difficultyIncreased = true;
       }
 
       // Platformları yenile
@@ -127,29 +176,47 @@ function JumpGame({
         const lastY = Math.min(...platforms.map((p) => p.y));
         platforms.push({
           x: Math.random() * (width - 60),
-          y: lastY - 80,
+          y: lastY - platformGap,
           w: 60,
           h: 16,
         });
       }
 
-      // Kaybettin mi?
-      if (player.y > height) gameOver = true;
+      // Yere düştü mü?
+      if (player.y > height) {
+        lives--;
+        if (lives > 0) {
+          // Kunduzu son güvenli konuma döndür
+          player.x = lastSafePosition.x;
+          player.y = lastSafePosition.y;
+          player.vy = 0;
+          player.vx = 0;
+        } else {
+          gameOver = true;
+        }
+      }
 
       // Çizim
       if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "#a8e6cf";
-      ctx.fillRect(0, 0, width, height);
+      // Arka planı şeffaf bırak, sadece platform ve karakter çiz
       for (const p of platforms) drawPlatform(p);
       drawBeaver(player.x, player.y, player.w, player.h);
+      // Score (sol üst)
       ctx.fillStyle = "#222";
       ctx.font = "16px sans-serif";
-      ctx.fillText(`Skor: ${score}`, 10, 24);
+      ctx.fillText(`Score: ${score}`, 10, 24);
+      // Lives (sağ üst)
+      ctx.font = "20px sans-serif";
+      ctx.fillStyle = "#e53935";
+      let heart = "\u2665"; // ♥
+      let livesText = Array(lives).fill(heart).join(" ");
+      ctx.fillText(livesText, width - 24 * lives - 10, 28);
       if (gameOver) {
         ctx.fillStyle = "#fff";
         ctx.font = "bold 32px sans-serif";
-        ctx.fillText("Oyun Bitti", width / 2 - 80, height / 2);
+        ctx.fillText("GAME OVER", width / 2 - 100, height / 2);
+        if (onGameOver) setTimeout(onGameOver, 100); // Birkaç frame sonra çağır
         return;
       }
       requestAnimationFrame(step);
@@ -167,6 +234,28 @@ function JumpGame({
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
 
+    // Mobil: parmak hareketiyle sağ/sol hareket
+    function onTouchStart(e: TouchEvent) {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+      }
+    }
+    function onTouchMove(e: TouchEvent) {
+      if (touchStartX === null) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 20) {
+        if (dx > 0) player.vx = 4;
+        else player.vx = -4;
+      }
+    }
+    function onTouchEnd(e: TouchEvent) {
+      player.vx = 0;
+      touchStartX = null;
+    }
+    canvas.addEventListener("touchstart", onTouchStart);
+    canvas.addEventListener("touchmove", onTouchMove);
+    canvas.addEventListener("touchend", onTouchEnd);
+
     // Responsive
     function resize() {
       width = canvas.width = Math.min(390, window.innerWidth - 40);
@@ -178,17 +267,39 @@ function JumpGame({
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("resize", resize);
+      canvas.removeEventListener("touchstart", onTouchStart);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onTouchEnd);
     };
   }, [grassSrc, beaverSrc]);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 8 }}>
+    <div style={{ display: "flex", justifyContent: "center", padding: 8, position: "relative" }}>
+      {/* Bulutlu arka plan */}
+      <img
+        src="/jumpingbeaver/clouds.png"
+        alt="Clouds"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          zIndex: 0,
+          borderRadius: 16,
+          pointerEvents: "none",
+          userSelect: "none"
+        }}
+      />
       <canvas
         ref={canvasRef}
         style={{
           borderRadius: 16,
           boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
           touchAction: "none",
+          position: "relative",
+          zIndex: 1
         }}
       />
     </div>
