@@ -19,7 +19,7 @@ export default function Sleepy() {
 
     // Görseller
     const playerImg = new Image();
-    playerImg.src = "/bears/sleepy.png";
+    playerImg.src = "/sleepygame/sleep.png";
     
     const coffeeImg = new Image();
     coffeeImg.src = "/bears/coffee-emoji.svg"; // Çizilmiş kahve emojisi
@@ -27,7 +27,7 @@ export default function Sleepy() {
     const bedImg = new Image();
     bedImg.src = "/bears/bed.svg"; // SVG kullan
 
-    let player = { x: canvas.width / 2, y: canvas.height - 100, width: 60, height: 60, speed: 6 };
+    let player = { x: canvas.width / 2, y: canvas.height - 100, width: 55, height: 70, speed: 6 };
     let keys: Record<string, boolean> = {};
     
     // Düşen objeler
@@ -73,28 +73,26 @@ export default function Sleepy() {
       else keys[e.key] = false;
     }
 
-    function handleTouchMove(e: TouchEvent) {
+    function handleTouch(e: TouchEvent) {
       if (gameOver || !running) return;
       if (e.touches.length === 0) return;
       
       const canvasRect = canvas.getBoundingClientRect();
       const touchX = e.touches[0].clientX - canvasRect.left;
       
-      // Sol taraf (< 1/3) - sola hareket
-      if (touchX < canvas.width / 3) {
-        player.x -= player.speed * 1.5;
+      // Sol taraf (< 1/2) - karakteri sola kaydır
+      if (touchX < canvas.width / 2) {
+        player.x = Math.max(player.width / 2, player.x - 80);
       }
-      // Sağ taraf (> 2/3) - sağa hareket
-      else if (touchX > (canvas.width * 2) / 3) {
-        player.x += player.speed * 1.5;
+      // Sağ taraf (> 1/2) - karakteri sağa kaydır
+      else {
+        player.x = Math.min(canvas.width - player.width / 2, player.x + 80);
       }
-      
-      player.x = Math.max(player.width / 2, Math.min(player.x, canvas.width - player.width / 2));
     }
 
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKey);
-    canvas.addEventListener("touchmove", handleTouchMove, { passive: true });
+    canvas.addEventListener("touchstart", handleTouch, { passive: true });
 
     let req = 0;
     let last = performance.now();
@@ -181,13 +179,14 @@ export default function Sleepy() {
         }
       }
 
-      // Oyuncu karakteri
+      // Oyuncu karakteri (sleepy beaver PNG)
       if (playerImg.complete && playerImg.naturalWidth) {
         ctx.drawImage(playerImg, player.x - player.width / 2, player.y - player.height / 2, player.width, player.height);
       } else {
+        // Fallback - görsel yüklenene kadar
         ctx.font = "50px Arial";
         ctx.textAlign = "center";
-        ctx.fillText(gameOver ? "😴" : "😵‍💫", player.x, player.y + 15);
+        ctx.fillText("🦫", player.x, player.y + 15);
         ctx.textAlign = "left";
       }
 
@@ -215,7 +214,7 @@ export default function Sleepy() {
       cancelAnimationFrame(req);
       window.removeEventListener("keydown", handleKey);
       window.removeEventListener("keyup", handleKey);
-      canvas.removeEventListener("touchmove", handleTouchMove);
+      canvas.removeEventListener("touchstart", handleTouch);
     };
   }, [running, gameOver]);
 
@@ -247,7 +246,7 @@ export default function Sleepy() {
               >Back to Home</button>
             </div>
             <div className="text-white text-sm text-center pt-4 border-t border-amber-500">
-              <p>Touch left to move left</p>
+              <p>Touch left/right side to move</p>
               <p>Touch right to move right</p>
             </div>
           </div>
