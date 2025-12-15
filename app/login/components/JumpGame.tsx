@@ -137,6 +137,7 @@ function JumpGame({
       if (player.y > height) gameOver = true;
 
       // Çizim
+      if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = "#a8e6cf";
       ctx.fillRect(0, 0, width, height);
