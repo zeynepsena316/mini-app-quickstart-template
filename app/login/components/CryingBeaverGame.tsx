@@ -6,6 +6,8 @@ import React, { useEffect, useRef } from "react";
 export default function CryingBeaverGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [score, setScore] = React.useState(0);
+  const [showHomeModal, setShowHomeModal] = React.useState(false);
+  const [showStartModal, setShowStartModal] = React.useState(true);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -274,13 +276,19 @@ export default function CryingBeaverGame() {
       }
       // Draw ground block at the bottom
       // Sadece kunduzun ayağının altına, orijinal boyutunda ve ortalanmış olarak çim bloğu koy
-      if (blockImg.complete && blockImg.naturalWidth > 0 && blockImg.naturalHeight > 0) {
-        const blockW = blockImg.naturalWidth;
-        const blockH = blockImg.naturalHeight;
-        const thinH = blockH * 0.35;
-        const grassY = beaver.y + beaver.h - thinH / 2;
-        const grassX = beaver.x + beaver.w / 2 - blockW / 2;
-        ctx.drawImage(blockImg, grassX, grassY, blockW, thinH);
+      // Kunduzun ayağının altına arka planla uyumlu yarı saydam koyu bir platform (gölge/zemin efekti) ekle
+      {
+        const platW = beaver.w * 0.85;
+        const platH = beaver.h * 0.18;
+        const platX = beaver.x + beaver.w / 2 - platW / 2;
+        const platY = beaver.y + beaver.h - platH * 0.3;
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.ellipse(platX + platW / 2, platY + platH / 2, platW / 2, platH / 2, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.restore();
       }
       drawBeaver(beaver.x, beaver.y, beaver.w, beaver.h);
       for (const tear of tears) drawTear(tear.x, tear.y, tear.width, tear.height, tear.phase, tear.isLeft);
@@ -339,7 +347,69 @@ export default function CryingBeaverGame() {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: 8 }}>
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", padding: 8 }}>
+      {/* Start modal */}
+      {showStartModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.8)" }}>
+          <div style={{ background: "#fff", borderRadius: 24, boxShadow: "0 8px 32px #0004", padding: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, width: 320, maxWidth: "95vw", aspectRatio: '9/16', minHeight: 420, justifyContent: 'center' }}>
+            <img src="/crying-beaver-game/beaver.png" alt="Crying Beaver" style={{ width: 100, height: 100, borderRadius: "50%", marginBottom: 8, boxShadow: "0 2px 12px #0001" }} />
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#1976d2", marginBottom: 8, textAlign: 'center' }}>Crying Beaver</div>
+            <div style={{ color: "#1976d2", fontSize: 17, textAlign: "center", marginBottom: 8, fontWeight: 500 }}>
+              Catch as many tears as you can with the bucket!<br/>
+            </div>
+            <div style={{ color: "#334155", fontSize: 16, textAlign: "center", marginBottom: 10, lineHeight: 1.5 }}>
+              <b style={{ color: '#1976d2' }}>Rules:</b><br/>
+              Move the bucket left and right.<br/>
+              Collect falling tears.<br/>
+              If you miss, the tear is lost.<br/>
+            </div>
+            <div style={{ display: 'flex', gap: 16, width: '100%', marginTop: 8, justifyContent: 'center' }}>
+              <button
+                style={{ flex: 1, padding: "14px 0", background: "#1976d2", color: "#fff", borderRadius: 12, fontWeight: 700, fontSize: 20, border: "none", cursor: "pointer", letterSpacing: 1, boxShadow: '0 2px 8px #1976d233' }}
+                onClick={() => setShowStartModal(false)}
+              >Start</button>
+              <button
+                style={{ flex: 1, padding: "14px 0", background: "#fff", color: "#b80000", borderRadius: 12, fontWeight: 700, fontSize: 20, border: "2px solid #b80000", cursor: "pointer", letterSpacing: 1, boxShadow: '0 2px 8px #b8000033' }}
+                onClick={() => window.location.href = "/"}
+              >Go Back</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Home icon top-right */}
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 30 }}>
+        <button
+          onClick={() => setShowHomeModal(true)}
+          style={{ background: "#fff", color: "#1e293b", borderRadius: 9999, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px #0002", border: "none", cursor: "pointer" }}
+          aria-label="Home"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 28, height: 28 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-7.5L21 12M4.5 10.5V19a1.5 1.5 0 001.5 1.5h3.75m6 0H18a1.5 1.5 0 001.5-1.5v-8.5" />
+          </svg>
+        </button>
+      </div>
+      {/* Home modal */}
+      {showHomeModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }}>
+          <div style={{ background: "#fff", borderRadius: 24, boxShadow: "0 8px 32px #0004", padding: 32, display: "flex", flexDirection: "column", alignItems: "center", gap: 24, minWidth: 260, maxWidth: "90vw" }}>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>Game Paused</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+              <button
+                style={{ width: "100%", padding: "12px 0", background: "#06b6d4", color: "#fff", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", marginBottom: 8, cursor: "pointer" }}
+                onClick={() => { window.location.href = "/"; }}
+              >Return to Menu</button>
+              <button
+                style={{ width: "100%", padding: "12px 0", background: "#f59e42", color: "#fff", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", marginBottom: 8, cursor: "pointer" }}
+                onClick={() => { setShowHomeModal(false); }}
+              >Resume Game</button>
+              <button
+                style={{ width: "100%", padding: "12px 0", background: "#e5e7eb", color: "#1e293b", borderRadius: 12, fontWeight: 600, fontSize: 18, border: "none", marginBottom: 8, cursor: "pointer" }}
+                onClick={() => { setScore(0); setShowHomeModal(false); }}
+              >Restart Game</button>
+            </div>
+          </div>
+        </div>
+      )}
       <canvas
         ref={canvasRef}
         style={{
@@ -347,6 +417,8 @@ export default function CryingBeaverGame() {
           boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
           touchAction: "none",
           background: "#e3f2fd",
+          filter: showStartModal ? 'blur(2px)' : 'none',
+          pointerEvents: showStartModal ? 'none' : 'auto',
         }}
       />
       <div style={{ fontWeight: 600, fontSize: 18, marginTop: 8 }}>Toplanan yaş: {score}</div>

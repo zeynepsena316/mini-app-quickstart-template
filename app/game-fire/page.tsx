@@ -335,42 +335,34 @@ export default function GameFirePage() {
           }} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Başla</button>
         </div>
       )}
-      <div
-        ref={containerRef}
-        tabIndex={0}
-        style={{
-          width: 360,
-          height: 600,
-          maxWidth: "98vw",
-          maxHeight: "90vh",
-          margin: "12px auto",
-          background: (() => {
-            if (gameOver) return "#1a0010";
-            if (flash) return "radial-gradient(circle at 50% 50%, #fffbe6 0%, #ffe066 40%, #ff3c3c 80%, #b80000 100%)";
-            // Sönmeyen ateş ve skor ile renk geçişi
-            const fireRatio = Math.min(fires.length, MAX_UNEXTINGUISHED) / MAX_UNEXTINGUISHED;
-            const scoreRatio = Math.max(0, Math.min(1, -score / Math.abs(GAME_OVER_SCORE)));
-            // Mavi -> Kırmızı -> Bordo -> Siyah
-            // 0: mavi, 0.4: kırmızı, 0.7: bordo, 1: siyah
-            let bg = "#1e90ff"; // Başlangıç mavi
-            if (fireRatio + scoreRatio > 0.95) {
-              bg = "#0a0000"; // siyaha yakın
-            } else if (fireRatio + scoreRatio > 0.7) {
-              bg = "#3a001a"; // bordo
-            } else if (fireRatio + scoreRatio > 0.4) {
-              bg = "#ff3c3c"; // kırmızı
-            }
-            return `linear-gradient(180deg, ${bg} 0%, #b80000 100%)`;
-          })(),
-          transition: flash || gameOver ? "background 0.15s" : "background 0.5s",
-          border: "2px solid #a80000",
+        <div style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          background: "rgba(255,255,255,0.97)",
+          zIndex: 20,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           borderRadius: 18,
-          position: "relative",
-          overflow: "hidden",
-          boxShadow: "0 4px 24px #0002"
-        }}
-        onClick={() => {}}
-      >
+        }}>
+          <img src="/fireandbeaver/firebeaver.png" alt="Fire Beaver" style={{ width: 110, height: 110, marginBottom: 18, borderRadius: "50%", boxShadow: "0 4px 24px #b8000033" }} />
+          <h2 style={{ color: "#b80000", fontWeight: 900, fontSize: 32, margin: 0, marginBottom: 10, letterSpacing: 2 }}>Firefighter Beaver</h2>
+          <div style={{ color: "#b80000", fontSize: 20, marginBottom: 18, textAlign: "center", maxWidth: 260 }}>
+            Tap or click the screen to extinguish fires!<br />
+            If too many fires explode, the game is over.<br />
+            <b>Rules:</b> Click each fire to put it out. Some fires need more than one click.<br />
+            Reach a score of 1000 to win.<br />
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <button onClick={() => setPlaying(true)} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#b80000", color: "#fff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #b8000033", marginBottom: 10 }}>Start</button>
+            <button onClick={() => router.push("/")} style={{ fontSize: 22, padding: "12px 38px", borderRadius: 12, background: "#fff", color: "#1e90ff", fontWeight: 700, border: "none", boxShadow: "0 2px 8px #1e90ff33", marginBottom: 10 }}>Go Back</button>
+          </div>
+        </div>
+// ...existing code...
         {/* beaver top center */}
         <div
           ref={beaverRef}
@@ -457,7 +449,6 @@ export default function GameFirePage() {
 `}</style>
       </div>
 
-      {/* Kurallar yazısı kaldırıldı, start ekranına taşındı */}
     </div>
   )
 }
