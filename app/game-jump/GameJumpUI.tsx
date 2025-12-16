@@ -33,7 +33,7 @@ export function HomeIconButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function PauseModal({ open, onResume, onRestart, onHome }: { open: boolean, onResume: () => void, onRestart: () => void, onHome: () => void }) {
+export function PauseModal({ open, onResume, onRestart, onHome, score }: { open: boolean, onResume: () => void, onRestart: () => void, onHome: () => void, score?: number }) {
   if (!open) return null;
   return (
     <div style={{
@@ -51,10 +51,15 @@ export function PauseModal({ open, onResume, onRestart, onHome }: { open: boolea
       borderRadius: 18,
     }}>
       <div style={{ background: "#fff", borderRadius: 24, padding: 40, minWidth: 320, boxShadow: "0 4px 24px #0003", display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
-        <h2 style={{ color: "#222", fontWeight: 900, fontSize: 36, marginBottom: 24 }}>Game Paused</h2>
-        <button onClick={onHome} style={{ fontSize: 22, padding: "16px 0", borderRadius: 12, background: "#00b6e6", color: "#fff", fontWeight: 700, border: "none", marginBottom: 8, width: 240 }}>Return to Menu</button>
+        <h2 style={{ color: "#222", fontWeight: 900, fontSize: 36, marginBottom: 8 }}>Game Paused</h2>
+        {score !== undefined && (
+          <div style={{ color: "#1976d2", fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
+            Score: {score}
+          </div>
+        )}
         <button onClick={onResume} style={{ fontSize: 22, padding: "16px 0", borderRadius: 12, background: "#ffb347", color: "#fff", fontWeight: 700, border: "none", marginBottom: 8, width: 240 }}>Resume Game</button>
-        <button onClick={onRestart} style={{ fontSize: 22, padding: "16px 0", borderRadius: 12, background: "#f2f2f2", color: "#222", fontWeight: 700, border: "none", width: 240 }}>Restart Game</button>
+        <button onClick={onRestart} style={{ fontSize: 22, padding: "16px 0", borderRadius: 12, background: "#f2f2f2", color: "#222", fontWeight: 700, border: "none", marginBottom: 8, width: 240 }}>Restart Game</button>
+        <button onClick={onHome} style={{ fontSize: 22, padding: "16px 0", borderRadius: 12, background: "#00b6e6", color: "#fff", fontWeight: 700, border: "none", width: 240 }}>Return to Menu</button>
       </div>
     </div>
   );

@@ -8,16 +8,18 @@ type JumpGameProps = {
   grassSrc?: string;
   beaverSrc?: string;
   onGameOver?: () => void;
-  onScoreChange?: (score: number) => void;
-  scoreInit?: number;
+  isPausedRef?: React.MutableRefObject<boolean>;
+  onResetReady?: (resetFn: () => void) => void;
+  onGetScoreReady?: (getScoreFn: () => number) => void;
 };
 
 function JumpGame({
   grassSrc = "/games/grass.png",
   beaverSrc = "/games/beaver.png",
   onGameOver,
-  onScoreChange,
-  scoreInit = 0,
+  isPausedRef,
+  onResetReady,
+  onGetScoreReady,
 }: JumpGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -70,7 +72,7 @@ function JumpGame({
       ];
 
       // Score başlat
-      let jumpedPlatformCount = scoreInit || 0;
+      let jumpedPlatformCount = 0;
 
     // Görseller
     const grassImg = new window.Image();
@@ -121,6 +123,32 @@ function JumpGame({
     let gameOver = false;
 
     function step() {
+      // PAUSE KONTROLÜ
+      if (isPausedRef && isPausedRef.current) {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, width, height);
+        for (const p of platforms) drawPlatform(p);
+        drawBeaver(player.x, player.y, player.w, player.h);
+        
+        // Score
+        ctx.fillStyle = "#1976d2";
+        ctx.font = "bold 16px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(`Score: ${jumpedPlatformCount}`, 10, 24);
+        
+        // Lives
+        ctx.font = "24px sans-serif";
+        ctx.fillStyle = "#e53935";
+        let heart = "\u2665";
+        let livesText = Array(lives).fill(heart).join(" ");
+        ctx.textAlign = "center";
+        ctx.fillText(livesText, width / 2, 36);
+        ctx.textAlign = "left";
+        
+        requestAnimationFrame(step);
+        return;
+      }
+      
       // Fizik
       player.vy += gravity;
       player.y += player.vy;
@@ -210,6 +238,7 @@ function JumpGame({
       ctx.textAlign = "left";
       ctx.fillText(`Score: ${jumpedPlatformCount}`, 10, 24);
       ctx.textAlign = "left";
+      
       // Lives (top center)
       ctx.font = "24px sans-serif";
       ctx.fillStyle = "#e53935";
@@ -228,6 +257,38 @@ function JumpGame({
       requestAnimationFrame(step);
     }
     step();
+
+    // Reset fonksiyonu
+    function resetGame() {
+      player.x = width / 2 - 24;
+      player.y = height - 60;
+      player.vy = -10;
+      player.vx = 0;
+      platforms = [
+        { x: width / 2 - 30, y: height - 12, w: 60, h: 16 },
+        ...Array.from({ length: 7 }, (_, i) => ({
+          x: Math.random() * (width - 60),
+          y: height - (i + 1) * 80 - 40,
+          w: 60,
+          h: 16,
+        }))
+      ];
+      jumpedPlatformCount = 0;
+      lives = 3;
+      difficultyIncreased = false;
+      gravity = 0.4;
+      jumpImpulse = -10;
+      platformGap = 80;
+      if (isPausedRef) isPausedRef.current = false;
+    }
+    
+    // Score getter fonksiyonu - her zaman güncel değeri döner
+    function getScore() {
+      return jumpedPlatformCount;
+    }
+    
+    if (onResetReady) onResetReady(resetGame);
+    if (onGetScoreReady) onGetScoreReady(getScore);
 
     // Klavye ile sağ/sol hareket
     function onKey(e: KeyboardEvent) {
@@ -277,7 +338,7 @@ function JumpGame({
       canvas.removeEventListener("touchmove", onTouchMove);
       canvas.removeEventListener("touchend", onTouchEnd);
     };
-  }, [grassSrc, beaverSrc]);
+  }, []); // Boş dependency array - sadece mount/unmount'ta çalışır
 
   return (
     <div style={{ display: "flex", justifyContent: "center", padding: 8, position: "relative" }}>
